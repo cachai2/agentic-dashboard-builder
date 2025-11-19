@@ -2,12 +2,20 @@
 
 Prototype the upload → reasoning → dashboard experience without relying on the full backend. The app is built with Vite + React + TypeScript, ships reusable components, exposes feature flags, and includes Playwright smoke tests plus a mock API server so designers can iterate offline.
 
+## Status snapshot · Nov 19 2025
+
+- `npm run dev` is the primary Ignite demo path (optimized for a 15" Surface projecting to stage displays).
+- Single CSV ingest story is live with the mock planner by default; flip `VITE_USE_MOCK=false` once the real orchestrator is online.
+- Latest UX polish: 3-step flow indicator, dashboard skeleton that animates only while generation is running, and a reactive drag/drop uploader hover state.
+- Quality gates: `npm run test:e2e` last ran on 2025-11-19 (pass) and `npm run build` previously succeeded after the latest UI sweep.
+
 ## Highlights
 
 - **CSV → dashboard loop**: drag/drop uploader, orchestrator status timeline, KPI grid, and Plotly/iframe dashboard preview. All state flows through `usePlannerSession` which can swap between the real REST bridge and the local mock.
 - **Mock planner + API server**: the UI uses `services/mockPlanner.ts`, while `npm run mock-api` hosts the `/upload`, `/dashboard/status`, `/dashboard/view` endpoints expected from `app/main.py`.
 - **Component gallery**: append `?gallery=1` or tap the hero toggle to explore documented components (Uploader, StatusTimeline, MetricsGrid, ErrorBanner, DashboardViewer) without Storybook overhead.
-- **Guided story arc**: the step indicator and dashboard placeholder keep demo audiences oriented from upload to insights, even before data renders.
+- **Guided story arc**: the 3-step indicator, idle + active dashboard placeholder states, and gated animation keep demo audiences oriented from upload to insights.
+- **Reactive uploader**: the drag/drop surface now pulses on hover and lifts during drag to telegraph that files can be dropped safely.
 - **Smoke coverage**: Playwright tests exercise upload success, validation errors, and retry/reset flows with the dev server auto-booted.
 - **Debug + telemetry hooks**: `window.DashboardDemo` exposes the latest session + plan, and `trackEvent` is wired for Application Insights once a connection string is provided.
 

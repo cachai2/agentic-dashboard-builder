@@ -1,3 +1,5 @@
+"""FastAPI application that wraps the Ollama planner workflow."""
+
 from __future__ import annotations
 
 import re
@@ -60,7 +62,6 @@ def plan(request: PlanRequest) -> PlanResponse:
             return PlanResponse(plan=plan, metadata=metadata)
         except Exception as exc:  # broad catch to surface error detail upstream
             last_error = exc
-            # For retry #2, append a clarification to the user prompt to enforce JSON output.
             if attempt == 0:
                 prompt_bundle["user"] = _build_retry_user_prompt(
                     base_user_prompt,

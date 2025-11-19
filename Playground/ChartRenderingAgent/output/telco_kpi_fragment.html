@@ -1,0 +1,11 @@
+
+<style>
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.kpi-row { display: flex; gap: 12px; overflow-x: auto; }
+.kpi-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; background: #fff; box-shadow: 0 1px 3px rgba(15,23,42,0.08); min-width: 160px; }
+.kpi-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 0 0 8px; }
+.kpi-value { font-size: 1.4rem; font-weight: 600; margin: 0; }
+.kpi-delta { font-size: 0.85rem; margin-top: 4px; color: #475569; }
+.kpi-spark { margin-top: 8px; }
+</style>
+<div class="kpi-grid"><div class="kpi-card"><p class="kpi-title">Active Customers</p><p class="kpi-value">7,043.00</p><div class="kpi-delta">+19200.00% vs prior tenure bucket</div><svg class="kpi-spark" width="120" height="36" viewBox="0 0 120 36" role="img"><polyline fill="none" stroke="#2563eb" stroke-width="2" points="0.00,36.00 40.00,32.76 80.00,25.89 120.00,0.00" /></svg></div><div class="kpi-card"><p class="kpi-title">Avg Monthly Charges</p><p class="kpi-value">$ 64.76</p><div class="kpi-delta">+879.00% paperless uplift</div><svg class="kpi-spark" width="120" height="36" viewBox="0 0 120 36" role="img"><polyline fill="none" stroke="#2563eb" stroke-width="2" points="0.00,36.00 40.00,15.74 80.00,25.36 120.00,0.00" /></svg></div><div class="kpi-card"><p class="kpi-title">Churn Rate</p><p class="kpi-value">% 26.54</p><div class="kpi-delta">--187.00% pts</div><svg class="kpi-spark" width="120" height="36" viewBox="0 0 120 36" role="img"><polyline fill="none" stroke="#2563eb" stroke-width="2" points="0.00,3.89 40.00,0.00 80.00,27.12 120.00,36.00" /></svg></div></div>

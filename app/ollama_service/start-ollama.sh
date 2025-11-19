@@ -5,7 +5,6 @@ set -e
 
 # Default model if none specified
 DEFAULT_MODEL="qwen2.5:14b"
-PLANNER_PORT="${PLANNER_PORT:-8801}"
 
 # Function to start ollama and pull model (keeps running)
 start_with_model() {
@@ -28,31 +27,6 @@ start_with_model() {
     echo "Ollama server is ready with model: $model"
     echo "Server will keep running... (Press Ctrl+C to stop)"
     wait
-}
-
-run_planner() {
-    local model="${1:-$DEFAULT_MODEL}"
-    echo "Starting Ollama server for planner mode..."
-    ollama serve &
-    local ollama_pid=$!
-
-    cleanup() {
-        echo "Shutting down Ollama server..."
-        kill $ollama_pid 2>/dev/null || true
-        wait $ollama_pid 2>/dev/null || true
-    }
-    trap cleanup EXIT
-
-    echo "Waiting for Ollama server to be ready..."
-    sleep 5
-    echo "Ensuring model $model is available..."
-    if ! ollama pull "$model"; then
-        echo "Warning: unable to pull model $model; planner will still start."
-    fi
-
-    export OLLAMA_MODEL="$model"
-    echo "Launching FastAPI planner on port $PLANNER_PORT"
-    exec python -m uvicorn app.ollama_service.service:app --host 0.0.0.0 --port "$PLANNER_PORT"
 }
 
 # Function to pull model and quit with timeout/retry mechanism
@@ -125,10 +99,6 @@ case "$1" in
         model="${2:-$DEFAULT_MODEL}"
         pull_and_quit "$model"
         ;;
-    "planner")
-        model="${2:-$DEFAULT_MODEL}"
-        run_planner "$model"
-        ;;
     "interactive"|"bash"|"shell")
         # Interactive bash shell
         exec /bin/bash
@@ -153,8 +123,8 @@ case "$1" in
         echo "  $0 interactive        # Debug shell"
         ;;
     "")
-        # Default behavior: start planner mode with default model
-        run_planner "$DEFAULT_MODEL"
+        # Default behavior: start Ollama and pull the default model, then keep serving
+        start_with_model "$DEFAULT_MODEL"
         ;;
     *)
         # Pass through any other ollama commands

@@ -30,6 +30,11 @@ This folder packages the CSV profiler as a reusable Microsoft Agent Framework to
    Replace `maf` with whatever entry point your Agent Framework installation provides. The command simply
    uploads the manifest, so the agent can call `POST /profile` with raw CSV data.
 
+   - **Optional smoke test**: run `python scripts/smoke_agent_tool.py` to exercise the FastAPI surface using
+      the same POST semantics the Agent Framework will use. The script uploads
+      `samples/retail_superstore_sample.csv`, validates the JSON with `DatasetProfile`, and prints a short
+      summary so you know the endpoint is healthy before registering it elsewhere.
+
 Once registered, agents invoke the `profile_csv` action by providing CSV bytes (or base64-decoded data) and optional
 `dataset_name` / `max_rows` query parameters. The response matches `schemas/dashboard_plan.schema.json`, so any planner
 inside the framework can rely on the established contract.

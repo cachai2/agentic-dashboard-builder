@@ -3,11 +3,16 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 
 from fastapi.testclient import TestClient
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from app.main import app
-from app.schemas import DashboardPlan
+from app.schemas import DatasetProfile
 
 SAMPLE_PATH = Path("samples/retail_superstore_sample.csv")
 
@@ -25,7 +30,7 @@ def main() -> None:
     response.raise_for_status()
 
     payload = response.json()
-    DashboardPlan.model_validate(payload)
+    DatasetProfile.model_validate(payload)
 
     print("Simulated tool call succeeded. Response summary:")
     print(json.dumps({

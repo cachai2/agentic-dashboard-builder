@@ -52,6 +52,46 @@ Playground/PrebuiltChartGenAgent/
 - If a builder can only operate directly on pandas DataFrames, create mock DataFrame generators that match our profiling summaries so the adapter remains deterministic.
 - Capture license usage (MIT, Apache, commercial) in `reports/comparison.md`—we’ll need that data before adopting any dependency.
 
+## Microsoft Agent Framework Tools
+
+- Reusable Agent Framework tools live in `agent_tools/chart_generation_tools.py`. Each function is decorated with `@ai_function` so you can register it directly with `PersistentAgentsClient` or any other `ChatAgent` implementation.
+- Install the preview SDK with `pip install --pre agent-framework-azure-ai` (the `--pre` flag is required while the framework is in preview). Regular project dependencies remain in `requirements.txt`.
+- Exposed tools:
+  - `list_chart_adapters` – returns metadata for every registered adapter so an orchestrator can pick the right one.
+  - `render_dashboard_section` – accepts a DashboardPlan JSON payload and adapter name, renders the section, and returns the artifact path + adapter metadata.
+  - `render_autoviz_dashboard_from_file` – convenience wrapper around the AutoViz batch runner for raw CSV/TSV/JSON/JSONL/XML files.
+- Example usage inside an Azure AI Foundry agent:
+
+  ```python
+   import asyncio
+   from pathlib import Path
+   from agent_framework.azure import AzureAIAgentClient
+   from agent_tools import chart_generation_tools as chart_tools
+   from azure.identity.aio import AzureCliCredential
+
+  async def main() -> None:
+     async with AzureCliCredential() as credential:
+        async with AzureAIAgentClient(async_credential=credential).create_agent(
+           name="ChartAgent",
+           instructions="You turn DashboardPlan payloads into HTML charts.",
+           tools=[
+              chart_tools.list_chart_adapters,
+              chart_tools.render_dashboard_section,
+              chart_tools.render_autoviz_dashboard_from_file,
+           ],
+        ) as agent:
+           plan = Path("tests/data/sample_plan.json").read_text(encoding="utf-8")
+           result = await agent.run(
+              "Call render_dashboard_section with the first plan section using plotly_express."
+              f" Here is the plan JSON: ```json\n{plan}\n```"
+           )
+           print(result.text)
+
+  asyncio.run(main())
+  ```
+
+  Tool responses include the artifact path plus adapter metadata so the orchestrator can hand results back to the user or pipe them into another workflow step.
+
 ## Local Testing
 
 1. Install dependencies:
@@ -97,6 +137,12 @@ Playground/PrebuiltChartGenAgent/
 6. Open the artifact in a browser or launch a local static server on port `8110` for quick previews (the gallery page references the individual HTML files via `<iframe>`).
 
 7. Update `reports/comparison.md` with your findings and link the artifact so others can inspect results asynchronously.
+
+8. Run the new Agent Framework tool tests when you touch `agent_tools/`:
+
+   ```powershell
+   python -m unittest tests.test_agent_tools
+   ```
 
 ## Stretch Goals
 

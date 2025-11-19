@@ -1,0 +1,220 @@
+{
+  "datasets": [
+    {
+      "id": "telco_timeseries",
+      "path": "samples/telco_timeseries.csv",
+      "format": "csv"
+    },
+    {
+      "id": "telco_base",
+      "path": "samples/telco_churn_clean.csv",
+      "format": "csv"
+    },
+    {
+      "id": "telco_composition",
+      "path": "samples/telco_composition.csv",
+      "format": "csv"
+    },
+    {
+      "id": "telco_scatter",
+      "path": "samples/telco_scatter.csv",
+      "format": "csv"
+    },
+    {
+      "id": "telco_funnel",
+      "path": "samples/telco_funnel.csv",
+      "format": "csv"
+    }
+  ],
+  "sections": [
+    {
+      "operation": "kpi",
+      "title": "Telco Snapshot",
+      "layout": "grid",
+      "cards": [
+        {
+          "title": "Active Customers",
+          "value": 7043.0,
+          "delta": {
+            "value": 192.0,
+            "direction": "up",
+            "label": "vs prior tenure bucket"
+          },
+          "trend": [
+            95,
+            119,
+            170,
+            362
+          ],
+          "trend_label": "customers"
+        },
+        {
+          "title": "Avg Monthly Charges",
+          "value": 64.76,
+          "unit": "$",
+          "delta": {
+            "value": 8.79,
+            "direction": "up",
+            "label": "paperless uplift"
+          },
+          "trend": [
+            70.82,
+            76.38,
+            73.74,
+            80.7
+          ],
+          "trend_label": "$"
+        },
+        {
+          "title": "Churn Rate",
+          "value": 26.54,
+          "unit": "%",
+          "delta": {
+            "value": -1.87,
+            "direction": "down",
+            "label": "pts"
+          },
+          "trend": [
+            8.42,
+            9.24,
+            3.53,
+            1.66
+          ],
+          "trend_label": "%"
+        }
+      ]
+    },
+    {
+      "operation": "timeseries",
+      "title": "Active Customers vs Churn Rate",
+      "dataset": "telco_timeseries",
+      "x": {
+        "column": "period",
+        "grain": "month"
+      },
+      "series": [
+        {
+          "id": "active_customers",
+          "column": "active_customers",
+          "label": "Active Customers"
+        },
+        {
+          "id": "churn_rate",
+          "column": "churn_rate",
+          "label": "Churn Rate",
+          "axis": "secondary"
+        }
+      ],
+      "options": {
+        "rolling_window": 3
+      }
+    },
+    {
+      "operation": "groupby",
+      "title": "Avg Monthly Charges by Contract",
+      "dataset": "telco_base",
+      "dimension": "Contract",
+      "metric": "MonthlyCharges",
+      "aggregation": "avg",
+      "options": {
+        "orientation": "horizontal",
+        "limit": 5,
+        "show_reference": true
+      }
+    },
+    {
+      "operation": "composition",
+      "title": "Internet Service Mix by Tenure Band",
+      "dataset": "telco_composition",
+      "x": {
+        "column": "tenure_band",
+        "grain": "category"
+      },
+      "stacks": [
+        "dsl",
+        "fiber_optic",
+        "no_service"
+      ],
+      "options": {
+        "normalize": true,
+        "kind": "stacked_bar"
+      }
+    },
+    {
+      "operation": "distribution",
+      "title": "Monthly Charges Distribution",
+      "dataset": "telco_base",
+      "metric": "MonthlyCharges",
+      "options": {
+        "bins": 40,
+        "overlay": "density",
+        "show_boxplot": true
+      }
+    },
+    {
+      "operation": "outliers",
+      "title": "Churn Rate Spikes",
+      "dataset": "telco_timeseries",
+      "x": {
+        "column": "period",
+        "grain": "month"
+      },
+      "y": "churn_rate",
+      "threshold": {
+        "value": 0.4665,
+        "direction": "above"
+      },
+      "flag_column": "is_spike"
+    },
+    {
+      "operation": "scatter",
+      "title": "Total vs Monthly Charges",
+      "dataset": "telco_scatter",
+      "x": "monthly_charges",
+      "y": "total_charges",
+      "size": "tenure",
+      "color": "churn_label",
+      "text": "customerID",
+      "tooltip_fields": [
+        "addon_count",
+        "tenure"
+      ],
+      "quadrant": {
+        "x": 70,
+        "y": 2000,
+        "labels": [
+          "Low Spend / Low Lifetime",
+          "High Spend / Low Lifetime",
+          "Low Spend / High Lifetime",
+          "High Spend / High Lifetime"
+        ]
+      },
+      "options": {
+        "trendline": true,
+        "opacity": 0.8
+      }
+    },
+    {
+      "operation": "funnel",
+      "title": "Retention Funnel",
+      "dataset": "telco_funnel",
+      "stage_column": "stage",
+      "value_column": "count",
+      "comparison_column": "prev_count",
+      "stages": [
+        "All Customers",
+        "Phone Service",
+        "Internet Service",
+        "Bundle Add-ons",
+        "Churned"
+      ],
+      "options": {
+        "show_conversion": true,
+        "show_delta": true
+      }
+    }
+  ],
+  "metadata": {
+    "source": "Telco churn sample"
+  }
+}

@@ -21,7 +21,7 @@ param proxyAuthPassword string
 param enableDebugging bool = false
 
 @description('Enable VNet integration for the Container Apps Environment')
-param enableVnetIntegration bool = false
+param enableVnetIntegration bool = true
 
 @description('Enable persistent volume mount for the Ollama GPU service')
 param enableOllamaModelVolume bool = true
@@ -235,6 +235,15 @@ resource ollamaModelShare 'Microsoft.Storage/storageAccounts/fileServices/shares
   }
 }
 
+resource ollamaModelSmbShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-01-01' = {
+  parent: fileService
+  name: 'ollama-model-smb'
+  properties: {
+    enabledProtocols: 'SMB'
+    shareQuota: 1024
+  }
+}
+
 resource storagePrivateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
   name: 'privatelink.file.${environment().suffixes.storage}'
   location: 'global'
@@ -364,6 +373,19 @@ resource ollamaModelStorage 'Microsoft.App/managedEnvironments/storages@2025-02-
   }
 }
 
+resource ollamaModelSmbStorage 'Microsoft.App/managedEnvironments/storages@2025-02-02-preview' = {
+  parent: containerAppsEnvironment
+  name: 'ollama-model-storage-smb'
+  properties: {
+    azureFile: {
+      accountName: storageAccount.name
+      accountKey: listKeys(storageAccount.id, '2022-09-01').keys[0].value
+      shareName: ollamaModelSmbShare.name
+      accessMode: 'ReadWrite'
+    }
+  }
+}
+
 resource acrPullAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   scope: containerRegistry
   name: guid(containerRegistry.id, userAssignedIdentity.name, 'AcrPull')
@@ -413,7 +435,7 @@ module ollamaModule './ollama.bicep' = {
     userAssignedIdentityId: userAssignedIdentity.id
     containerAppsEnvironmentId: containerAppsEnvironment.id
     containerRegistryEndpoint: containerRegistry.properties.loginServer
-    ollamaModelStorageName: ollamaModelStorage.name
+    ollamaModelStorageName: ollamaModelSmbStorage.name
     enableStorageMount: enableOllamaModelVolume
   }
 }

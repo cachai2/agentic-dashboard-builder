@@ -1,6 +1,7 @@
+"""Client wrapper for interacting with the Ollama HTTP API."""
+
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any, Dict
 
@@ -8,8 +9,12 @@ import httpx
 
 from .config import Settings, get_settings
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 
 class OllamaClient:
+    """Simple HTTP/S client for Ollama chat completions."""
+
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
         self._http_client: httpx.Client | None = None
@@ -27,7 +32,7 @@ class OllamaClient:
         return self._call_remote(payload, schema_payload)
 
     def _load_mock_plan(self) -> str:
-        mock_path = Path(__file__).resolve().parent.parent / "samples" / "mock_plan.json"
+        mock_path = PROJECT_ROOT / "samples" / "mock_plan.json"
         return mock_path.read_text(encoding="utf-8")
 
     def _call_remote(self, prompts: Dict[str, str], response_schema: Dict[str, Any] | None = None) -> str:

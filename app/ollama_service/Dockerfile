@@ -1,6 +1,6 @@
 FROM ollama/ollama:latest
 
-COPY start-ollama.sh /start-ollama.sh
+COPY app/ollama_service/start-ollama.sh /start-ollama.sh
 # Expose the default Ollama port
 EXPOSE 11434
 

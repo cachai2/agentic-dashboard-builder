@@ -1,3 +1,5 @@
+"""Validation helpers for structured DashboardPlan responses."""
+
 from __future__ import annotations
 
 import json
@@ -23,7 +25,7 @@ class PlanValidator:
     def parse_and_validate(self, plan_text: str) -> Dict[str, Any]:
         try:
             plan = orjson.loads(plan_text)
-        except orjson.JSONDecodeError as exc:  # pragma: no cover - orjson specific path
+        except orjson.JSONDecodeError as exc:  # pragma: no cover - vendor-specific path
             raise ValueError("Planner returned invalid JSON") from exc
 
         jsonschema.validate(instance=plan, schema=self._schema)

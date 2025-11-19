@@ -1,3 +1,7 @@
+"""Pydantic schemas shared by the Ollama planner service."""
+
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -13,7 +17,7 @@ class PlanRequest(BaseModel):
 class PlanMetadata(BaseModel):
     prompt_version: str
     model: str
-    round_trips: int = Field(default=1, description="How many attempts were made before producing a valid plan.")
+    round_trips: int = Field(default=1, description="Number of attempts made before producing a valid plan.")
     duration_ms: float
     prompt_hash: str
     requested_at: datetime

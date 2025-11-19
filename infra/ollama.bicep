@@ -94,7 +94,7 @@ resource ollamaApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
       volumes: enableStorageMount ? [
         {
           name: 'ollama-models'
-          storageType: 'NfsAzureFile'
+          storageType: 'AzureFile'
           storageName: ollamaModelStorageName
         }
       ] : []

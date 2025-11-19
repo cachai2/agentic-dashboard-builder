@@ -11,6 +11,14 @@ Prototype the ingestion + lightweight analysis loop that powers the Agent Framew
 3. Contract tests (`tests/test_profile_contract.py`) that assert compliance with `schemas/dashboard_plan.schema.json` inputs.
 4. Telemetry hook that emits `profile_generated` with latency + column counts (can be console logs for now).
 
+## Current Status (Nov 2025)
+
+- FastAPI surface (`app/main.py`) plus CLI scripts accept CSV bytes/paths, enforce deterministic sampling via `max_rows`, and emit the `DatasetProfile` contract.
+- Observability is wired up end-to-end: telemetry logs `profile_generated`, and OpenTelemetry spans (`csv-profiler-agent`) annotate dataset size, sampling ratio, and runtimes.
+- Sample data tooling: `scripts/generate_sample_datasets.py` rebuilds deterministic 10k-row CSVs, while `scripts/profile_samples.py` writes profile snapshots to `output/output-<dataset>.json` (checked in for documentation).
+- Agent integrations: `agentframework/tool.profile_csv.yaml` packages the service as a Microsoft Agent Framework tool, and `scripts/smoke_agent_tool.py` simulates the same POST to validate readiness before registering.
+- Tests and lint: `pytest` covers the profile contract, and markdown docs are lint-friendly (no custom build steps required).
+
 ## Suggested Layout
 
 ```text
@@ -169,4 +177,10 @@ Agents that support function calling (OpenAI, LangChain, Semantic Kernel) can ma
 
    ```powershell
    pytest
+   ```
+
+5. (Optional) Simulate a Microsoft Agent Framework invocation without leaving your IDE:
+
+   ```powershell
+   python scripts/smoke_agent_tool.py
    ```

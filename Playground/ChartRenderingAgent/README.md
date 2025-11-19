@@ -257,11 +257,51 @@ All renderers are wired through `app/registry.py`, surfaced via the CLI (`python
 
 ## Sample Data Preprocessing
 
-- The raw Telco churn export (`samples/telco_churn.csv`) comes directly from Kaggle and keeps the original string-typed numerics and inconsistent category labels.
-- Run the preprocessing helper whenever you refresh the dataset so downstream renderers can rely on consistent columns:
+- Use the generic preprocessing CLI to run dataset-specific pipelines. List available datasets with `python -m app.preprocess --help`.
+- To clean the Telco churn export after re-downloading from Kaggle:
 
    ```powershell
-   .\.venv\Scripts\python.exe -m app.preprocess_telco --input samples/telco_churn.csv --output samples/telco_churn_clean.csv
+   .\.venv\Scripts\python.exe -m app.preprocess --dataset telco_churn --input samples/telco_churn.csv --output samples/telco_churn_clean.csv
    ```
 
-- The enriched output adds numeric `TotalCharges`, tenure bands, Yes/No boolean flags, add-on counts, contract length in months, and helper metrics like `monthly_charges_zscore`. Point dashboards at `samples/telco_churn_clean.csv` to skip per-chart munging.
+- The Telco pipeline adds numeric `TotalCharges`, tenure bands, boolean service flags, add-on counts, contract length in months, and helper metrics like `monthly_charges_zscore`. Point dashboards at `samples/telco_churn_clean.csv` to skip per-chart munging.
+- Generate ready-to-render plan assets (timeseries rollups, composition stacks, funnel counts, scatter sample) via the helper script:
+
+   ```powershell
+   .\.venv\Scripts\python.exe scripts/build_telco_dashboard.py
+   ```
+
+- The script materializes `samples/telco_timeseries.csv`, `samples/telco_composition.csv`, `samples/telco_funnel.csv`, `samples/telco_scatter.csv`, and a full `samples/telco_dashboard_plan.json` that exercises every renderer. Render it end-to-end with:
+
+   ```powershell
+   .\.venv\Scripts\python.exe -m app.cli render --plan samples/telco_dashboard_plan.json --out output/telco_dashboard.html
+   ```
+
+## Telco Dashboard Workflow
+
+Follow this quick path anytime you need to prove the agent can go from raw Telco export to a composed dashboard:
+
+1. **Preprocess the raw CSV** – run `python -m app.preprocess ...` (or the agent-facing `app.tools.preprocess_tool`) to refresh `samples/telco_churn_clean.csv` after downloading a new Kaggle export.
+2. **Build chart-ready assets** – execute `scripts/build_telco_dashboard.py` to regenerate every per-chart dataset plus `samples/telco_dashboard_plan.json`. The script logs where each artifact lands so you can diff the outputs or feed them into renderers manually.
+3. **Render dashboards or fragments** – call `app.tools.compose_tool` to emit `output/telco_dashboard.html`, or target a single section with `app.tools.render_chart_tool --section-index N` when iterating on an individual renderer.
+4. **Regress via tests** – `pytest -k telco_plan` confirms the plan + registry glue stay valid without running the entire suite.
+
+## Agent Tooling Interfaces
+
+- **Preprocess tool:** wraps dataset-specific cleaners so an agent can call them directly.
+
+   ```powershell
+   .\.venv\Scripts\python.exe -m app.tools.preprocess_tool --dataset telco_churn --input samples/telco_churn.csv --output samples/telco_churn_clean.csv
+   ```
+
+- **Single-chart renderer:** renders one section from a plan (useful for iterative or parallel workflows).
+
+   ```powershell
+   .\.venv\Scripts\python.exe -m app.tools.render_chart_tool --plan samples/telco_dashboard_plan.json --section-index 0 --out output/telco_kpi_fragment.html
+   ```
+
+- **Composer tool:** identical to `python -m app.cli`, kept separate so agents can reference a dedicated compose endpoint.
+
+   ```powershell
+   .\.venv\Scripts\python.exe -m app.tools.compose_tool --plan samples/telco_dashboard_plan.json --out output/telco_dashboard.html
+   ```
