@@ -41,8 +41,8 @@ const App = () => {
           <p className="eyebrow">Agent Playground</p>
           <h1>Upload · Watch · Present</h1>
           <p className="subtitle">
-            This frontend mocks the full orchestrator loop so we can iterate on UX before the backend
-            is final.
+            Watch how the agent ingests your data, reasons over each objective, and assembles a
+            dashboard in real time.
           </p>
         </div>
         <div className="hero-controls">

@@ -10,12 +10,40 @@
   padding: 24px;
   text-align: center;
   background: rgba(56, 189, 248, 0.05);
-  transition: border-color 200ms ease, background 200ms ease;
+  transition: border-color 200ms ease, background 200ms ease, box-shadow 200ms ease,
+    transform 200ms ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .dropZoneActive {
   border-color: var(--color-accent);
   background: rgba(56, 189, 248, 0.15);
+  box-shadow: 0 10px 30px rgba(56, 189, 248, 0.25);
+  transform: translateY(-2px);
+}
+
+.dropZone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at top,
+    rgba(56, 189, 248, 0.25),
+    rgba(56, 189, 248, 0)
+  );
+  opacity: 0;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+
+.dropZone:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.18);
+}
+
+.dropZone:hover::after {
+  opacity: 1;
 }
 
 .dropZone input {

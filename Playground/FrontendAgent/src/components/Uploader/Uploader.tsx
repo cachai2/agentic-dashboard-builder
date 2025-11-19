@@ -130,7 +130,7 @@ export const Uploader = ({ isUploading, onUpload }: Props) => {
           Reset
         </button>
         <button type="submit" className={styles.primaryButton} disabled={isUploading}>
-          {isUploading ? 'Uploading…' : 'Upload & plan'}
+          {isUploading ? 'Uploading…' : 'Generate dashboard'}
         </button>
       </div>
 

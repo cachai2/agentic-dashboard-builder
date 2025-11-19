@@ -35,6 +35,7 @@ Playground/OllamaStructuredJson/
 - When adding new chart operations or metadata fields, update `schemas/dashboard_plan.schema.json` and ping the Rendering + Frontend agents.
 - Store large model artifacts outside the repo (use Azure Files or Blob). For local dev, document how to run `ollama pull gpt-oss:20b` in this folder.
 - Use environment variables (`OLLAMA_HOST`, `OLLAMA_MODEL`, `PLAN_SCHEMA_PATH`) instead of hardcoded values so azd can inject settings later.
+- Structured-output toggles: `OLLAMA_SEND_JSON_SCHEMA=true` (default) enables sending the DashboardPlan schema in the `format` payload, while `OLLAMA_FORCE_JSON_MODE=true` keeps JSON-mode fallback when schema transmission is disabled.
 
 ## Stretch Goals
 

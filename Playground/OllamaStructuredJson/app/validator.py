@@ -28,3 +28,7 @@ class PlanValidator:
 
         jsonschema.validate(instance=plan, schema=self._schema)
         return plan
+
+    @property
+    def schema(self) -> Dict[str, Any]:
+        return self._schema

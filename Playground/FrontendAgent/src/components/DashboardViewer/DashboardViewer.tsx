@@ -6,13 +6,44 @@ import styles from './DashboardViewer.module.css'
 type Props = {
   iframeUrl?: string
   charts: ChartConfig[]
-  isLoading: boolean
+  isGenerating: boolean
   placeholder: string
 }
 
-export const DashboardViewer = ({ iframeUrl, charts, isLoading, placeholder }: Props) => {
+const Placeholder = ({ message, isGenerating }: { message: string; isGenerating: boolean }) => (
+  <div className={styles.placeholder}>
+    <div>
+      <p className={styles.placeholderTitle}>Dashboard preview</p>
+      <p className={styles.placeholderCopy}>{message}</p>
+    </div>
+    {isGenerating ? (
+      <>
+        <div className={styles.placeholderGrid} aria-hidden>
+          <div className={styles.placeholderCard}>
+            <span className={styles.placeholderBar} />
+            <span className={styles.placeholderBar} />
+            <span className={styles.placeholderBarShort} />
+          </div>
+          <div className={styles.placeholderCardTall}>
+            <span className={styles.placeholderBar} />
+            <span className={styles.placeholderChart} />
+          </div>
+          <div className={styles.placeholderCardTall}>
+            <span className={styles.placeholderBar} />
+            <span className={styles.placeholderChart} />
+          </div>
+        </div>
+        <span className={styles.placeholderStatus}>Generating dashboard…</span>
+      </>
+    ) : (
+      <p className={styles.placeholderIdle}>Kick off generation to see charts spark to life.</p>
+    )}
+  </div>
+)
+
+export const DashboardViewer = ({ iframeUrl, charts, isGenerating, placeholder }: Props) => {
   if (!charts.length && !iframeUrl) {
-    return <p>{placeholder}</p>
+    return <Placeholder message={placeholder} isGenerating={isGenerating} />
   }
 
   return (
@@ -53,7 +84,7 @@ export const DashboardViewer = ({ iframeUrl, charts, isLoading, placeholder }: P
             ) : null}
           </article>
         ))}
-        {isLoading ? <span>Updating charts…</span> : null}
+        {isGenerating ? <span className={styles.loadingLabel}>Updating charts…</span> : null}
       </div>
     </div>
   )

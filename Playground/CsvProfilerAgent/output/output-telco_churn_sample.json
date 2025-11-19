@@ -1,0 +1,544 @@
+{
+  "timestamp": "2025-11-19T19:58:03Z",
+  "dataset": "samples/telco_churn_sample.csv",
+  "profile": {
+    "dataset_name": "telco_churn_sample",
+    "row_count": 10000,
+    "sampled_row_count": 10000,
+    "sampling_ratio": 1.0,
+    "column_count": 21,
+    "generated_at": "2025-11-19T19:58:03.535634Z",
+    "columns": [
+      {
+        "name": "customerID",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 10000,
+        "example": "0000-5694",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "0000-5694",
+              "count": 1,
+              "percent": 0.01
+            },
+            {
+              "value": "0001-4863",
+              "count": 1,
+              "percent": 0.01
+            },
+            {
+              "value": "0002-6723",
+              "count": 1,
+              "percent": 0.01
+            },
+            {
+              "value": "0003-8678",
+              "count": 1,
+              "percent": 0.01
+            },
+            {
+              "value": "0004-7997",
+              "count": 1,
+              "percent": 0.01
+            }
+          ]
+        }
+      },
+      {
+        "name": "gender",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 2,
+        "example": "Female",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "Female",
+              "count": 5101,
+              "percent": 51.01
+            },
+            {
+              "value": "Male",
+              "count": 4899,
+              "percent": 48.99
+            }
+          ]
+        }
+      },
+      {
+        "name": "SeniorCitizen",
+        "semantic_type": "numeric",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 2,
+        "example": "0",
+        "numeric_stats": {
+          "min": 0.0,
+          "max": 1.0,
+          "mean": 0.4961,
+          "stddev": 0.5000097908832365,
+          "p05": 0.0,
+          "p95": 1.0
+        },
+        "categorical_stats": null
+      },
+      {
+        "name": "Partner",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 2,
+        "example": "No",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "Yes",
+              "count": 5012,
+              "percent": 50.12
+            },
+            {
+              "value": "No",
+              "count": 4988,
+              "percent": 49.88
+            }
+          ]
+        }
+      },
+      {
+        "name": "Dependents",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 2,
+        "example": "Yes",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "No",
+              "count": 5031,
+              "percent": 50.31
+            },
+            {
+              "value": "Yes",
+              "count": 4969,
+              "percent": 49.69
+            }
+          ]
+        }
+      },
+      {
+        "name": "tenure",
+        "semantic_type": "numeric",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 73,
+        "example": "35",
+        "numeric_stats": {
+          "min": 0.0,
+          "max": 72.0,
+          "mean": 36.2087,
+          "stddev": 21.15212248306429,
+          "p05": 3.0,
+          "p95": 69.0
+        },
+        "categorical_stats": null
+      },
+      {
+        "name": "PhoneService",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 2,
+        "example": "No",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "Yes",
+              "count": 5028,
+              "percent": 50.28
+            },
+            {
+              "value": "No",
+              "count": 4972,
+              "percent": 49.72
+            }
+          ]
+        }
+      },
+      {
+        "name": "MultipleLines",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 3,
+        "example": "Yes",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "Yes",
+              "count": 3383,
+              "percent": 33.83
+            },
+            {
+              "value": "No phone service",
+              "count": 3367,
+              "percent": 33.67
+            },
+            {
+              "value": "No",
+              "count": 3250,
+              "percent": 32.5
+            }
+          ]
+        }
+      },
+      {
+        "name": "InternetService",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 3,
+        "example": "Fiber optic",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "Fiber optic",
+              "count": 3422,
+              "percent": 34.22
+            },
+            {
+              "value": "No",
+              "count": 3344,
+              "percent": 33.44
+            },
+            {
+              "value": "DSL",
+              "count": 3234,
+              "percent": 32.34
+            }
+          ]
+        }
+      },
+      {
+        "name": "OnlineSecurity",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 3,
+        "example": "No internet service",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "No internet service",
+              "count": 3413,
+              "percent": 34.13
+            },
+            {
+              "value": "Yes",
+              "count": 3299,
+              "percent": 32.99
+            },
+            {
+              "value": "No",
+              "count": 3288,
+              "percent": 32.88
+            }
+          ]
+        }
+      },
+      {
+        "name": "OnlineBackup",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 3,
+        "example": "No",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "No internet service",
+              "count": 3353,
+              "percent": 33.53
+            },
+            {
+              "value": "No",
+              "count": 3345,
+              "percent": 33.45
+            },
+            {
+              "value": "Yes",
+              "count": 3302,
+              "percent": 33.02
+            }
+          ]
+        }
+      },
+      {
+        "name": "DeviceProtection",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 3,
+        "example": "No internet service",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "No internet service",
+              "count": 3362,
+              "percent": 33.62
+            },
+            {
+              "value": "Yes",
+              "count": 3332,
+              "percent": 33.32
+            },
+            {
+              "value": "No",
+              "count": 3306,
+              "percent": 33.06
+            }
+          ]
+        }
+      },
+      {
+        "name": "TechSupport",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 3,
+        "example": "Yes",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "No",
+              "count": 3340,
+              "percent": 33.4
+            },
+            {
+              "value": "Yes",
+              "count": 3333,
+              "percent": 33.33
+            },
+            {
+              "value": "No internet service",
+              "count": 3327,
+              "percent": 33.27
+            }
+          ]
+        }
+      },
+      {
+        "name": "StreamingTV",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 3,
+        "example": "No internet service",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "Yes",
+              "count": 3349,
+              "percent": 33.49
+            },
+            {
+              "value": "No",
+              "count": 3340,
+              "percent": 33.4
+            },
+            {
+              "value": "No internet service",
+              "count": 3311,
+              "percent": 33.11
+            }
+          ]
+        }
+      },
+      {
+        "name": "StreamingMovies",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 3,
+        "example": "No internet service",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "Yes",
+              "count": 3439,
+              "percent": 34.39
+            },
+            {
+              "value": "No",
+              "count": 3281,
+              "percent": 32.81
+            },
+            {
+              "value": "No internet service",
+              "count": 3280,
+              "percent": 32.8
+            }
+          ]
+        }
+      },
+      {
+        "name": "Contract",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 3,
+        "example": "Month-to-month",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "One year",
+              "count": 3365,
+              "percent": 33.65
+            },
+            {
+              "value": "Two year",
+              "count": 3324,
+              "percent": 33.24
+            },
+            {
+              "value": "Month-to-month",
+              "count": 3311,
+              "percent": 33.11
+            }
+          ]
+        }
+      },
+      {
+        "name": "PaperlessBilling",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 2,
+        "example": "Yes",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "Yes",
+              "count": 5068,
+              "percent": 50.68
+            },
+            {
+              "value": "No",
+              "count": 4932,
+              "percent": 49.32
+            }
+          ]
+        }
+      },
+      {
+        "name": "PaymentMethod",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 4,
+        "example": "Mailed check",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "Bank transfer (automatic)",
+              "count": 2527,
+              "percent": 25.27
+            },
+            {
+              "value": "Electronic check",
+              "count": 2520,
+              "percent": 25.2
+            },
+            {
+              "value": "Mailed check",
+              "count": 2480,
+              "percent": 24.8
+            },
+            {
+              "value": "Credit card (automatic)",
+              "count": 2473,
+              "percent": 24.73
+            }
+          ]
+        }
+      },
+      {
+        "name": "MonthlyCharges",
+        "semantic_type": "numeric",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 6362,
+        "example": "38.25",
+        "numeric_stats": {
+          "min": 18.04,
+          "max": 120.0,
+          "mean": 69.45353999999999,
+          "stddev": 29.348306983890605,
+          "p05": 23.099500000000003,
+          "p95": 115.38
+        },
+        "categorical_stats": null
+      },
+      {
+        "name": "TotalCharges",
+        "semantic_type": "numeric",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 9893,
+        "example": "1361.52",
+        "numeric_stats": {
+          "min": -0.21,
+          "max": 8624.98,
+          "mean": 2539.1158840000003,
+          "stddev": 1923.0009922370327,
+          "p05": 204.70450000000002,
+          "p95": 6366.469999999999
+        },
+        "categorical_stats": null
+      },
+      {
+        "name": "Churn",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 2,
+        "example": "Yes",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "No",
+              "count": 7400,
+              "percent": 74.0
+            },
+            {
+              "value": "Yes",
+              "count": 2600,
+              "percent": 26.0
+            }
+          ]
+        }
+      }
+    ],
+    "llm_annotations": null
+  }
+}

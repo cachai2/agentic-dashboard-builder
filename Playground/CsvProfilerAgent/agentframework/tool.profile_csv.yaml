@@ -1,0 +1,38 @@
+schema_version: 1.0
+name: csv_profiler
+summary: Deterministic CSV profiling surface for Microsoft Agent Framework tools.
+description: >-
+  Upload CSV data and receive the dashboard_plan schema payload with dtype inference,
+  statistics, and sampling metadata.
+auth:
+  type: none
+connection:
+  base_url: ${CSV_PROFILER_BASE_URL:-http://localhost:8101}
+actions:
+  - name: profile_csv
+    method: POST
+    path: /profile
+    description: Submit CSV bytes and retrieve the profile JSON used by downstream planners.
+    headers:
+      Content-Type: text/csv
+    query:
+      dataset_name:
+        type: string
+        required: false
+        description: Friendly alias that gets threaded through the response.
+      max_rows:
+        type: integer
+        required: false
+        description: Deterministic sample size cap, matching the FastAPI `max_rows` query parameter.
+    request:
+      body:
+        encoding: binary
+        description: Raw CSV payload (send bytes as-is; frameworks that require base64 should decode prior to invoking).
+    response:
+      success_status: 200
+      media_type: application/json
+      schema_path: ../schemas/dashboard_plan.schema.json
+      description: DashboardPlan contract emitted by `app.schemas.DashboardPlan`.
+notes:
+  - Ensure the FastAPI app is reachable at `CSV_PROFILER_BASE_URL` before registering the tool.
+  - Sampling metadata (`row_count`, `sampled_row_count`, `sampling_ratio`) surfaces in every response for downstream reasoning.

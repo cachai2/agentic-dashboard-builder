@@ -23,6 +23,9 @@ param enableDebugging bool = false
 @description('Enable VNet integration for the Container Apps Environment')
 param enableVnetIntegration bool = false
 
+@description('Enable persistent volume mount for the Ollama GPU service')
+param enableOllamaModelVolume bool = true
+
 var baseName = toLower('${environmentName}-${resourceToken}')
 var sanitized = toLower(replace(replace(environmentName, '-', ''), '_', ''))
 var sanitizedBase = empty(sanitized) ? 'env' : sanitized
@@ -411,7 +414,7 @@ module ollamaModule './ollama.bicep' = {
     containerAppsEnvironmentId: containerAppsEnvironment.id
     containerRegistryEndpoint: containerRegistry.properties.loginServer
     ollamaModelStorageName: ollamaModelStorage.name
-    enableStorageMount: enableVnetIntegration
+    enableStorageMount: enableOllamaModelVolume
   }
 }
 

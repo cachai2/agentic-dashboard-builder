@@ -20,17 +20,17 @@ export const theme = {
 export const copy = {
   uploader: {
     title: 'Upload a scenario CSV',
-    helper: 'We only need a handful of rows to get the orchestrator started.',
-    button: 'Upload & Plan',
+    helper: 'Drop in a few rows plus context—the agent takes it from there.',
+    button: 'Generate dashboard',
   },
   status: {
     title: 'Agent Orchestrator',
-    helper: 'Track the tools, reasoning, and retries while the plan firms up.',
+    helper: 'Agent reasoning, tool calls, and retries at a glance.',
     empty: 'Waiting on a CSV upload to begin planning.',
   },
   dashboard: {
     title: 'Live Dashboard Preview',
-    helper: 'We embed the draft dashboard so design + PM can react quickly.',
-    placeholder: 'Complete an upload to see the synthesized dashboard.',
+    helper: 'Anchor the story with the synthesized dashboard preview.',
+    placeholder: 'Your AI-built dashboard will appear here as soon as generation completes.',
   },
 }

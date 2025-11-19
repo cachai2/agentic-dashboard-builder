@@ -56,7 +56,7 @@ export const ComponentGallery = () => (
       <DashboardViewer
         iframeUrl={undefined}
         charts={sampleCharts}
-        isLoading={false}
+        isGenerating={false}
         placeholder="Plotly spec renders inline when provided."
       />
     </Panel>

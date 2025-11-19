@@ -25,9 +25,18 @@ class DashboardPlan(BaseModel):
     sections: list[Dict[str, Any]]
 
 
-# Load schema once
-with open(settings.dashboard_plan_schema_path, "r", encoding="utf-8") as f:
-    PLAN_SCHEMA = json.load(f)
+
+def _load_plan_schema() -> Dict[str, Any]:
+    try:
+        with open(settings.dashboard_plan_schema_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError as exc:  # pragma: no cover - environment misconfiguration
+        raise RuntimeError(
+            "Dashboard plan schema missing. Ensure 'schemas/' is copied into the image or adjust PLAN_SCHEMA_PATH."
+        ) from exc
+
+
+PLAN_SCHEMA = _load_plan_schema()
 
 
 def _validate_plan(plan: Dict[str, Any]) -> bool:

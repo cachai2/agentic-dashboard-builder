@@ -20,8 +20,12 @@ class AutoVizAdapterTestCase(TestCase):
         section = self.plan["sections"][0]
 
         class _FakeAutoViz:
-            def AutoViz(self, **_: object):
-                return None, "<html><body>fake</body></html>"
+            def AutoViz(self, **kwargs: object):  # type: ignore[override]
+                save_dir = Path(kwargs["save_plot_dir"]) / "AutoViz"
+                save_dir.mkdir(parents=True, exist_ok=True)
+                (save_dir / "chart_one.html").write_text("<html><body>chart1</body></html>", encoding="utf-8")
+                (save_dir / "chart_two.html").write_text("<html><body>chart2</body></html>", encoding="utf-8")
+                return self
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             out_file = Path(tmp_dir) / "autoviz.html"
@@ -31,3 +35,5 @@ class AutoVizAdapterTestCase(TestCase):
                 self.assertTrue(result.artifact_path.exists())
                 self.assertEqual(result.metadata["adapter"], AutoVizAdapter.name)
                 self.assertIn("rows", result.metadata)
+                contents = result.artifact_path.read_text(encoding="utf-8")
+                self.assertIn("Chart 1: Chart One", contents)

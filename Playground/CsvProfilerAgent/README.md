@@ -24,11 +24,80 @@ Playground/CsvProfilerAgent/
 ├─ samples/              # copy of repo-level CSVs you need
 └─ requirements.txt      # prefer keeping deps lightweight
 
+```
+
 ## Sample Data Sets
 
 - See `docs/datasets.md` for 10k-row-friendly public sources (retail, telco churn, Citi Bike).
 - Run `python scripts/generate_sample_datasets.py` to rebuild the deterministic CSVs under `samples/`.
+- Run `python scripts/profile_samples.py` to batch-profile the default samples and persist `output/output-<dataset>.json` payloads for docs or downstream consumers.
 - Each generator produces exactly 10,000 rows so contract tests have predictable runtimes.
+
+## Agent Tool Contract
+
+Agents can treat the profiler as either an HTTP tool (FastAPI surface) or a subprocess tool (CLI helpers). Key facets:
+
+### HTTP surface
+
+- **Endpoint**: `POST /profile`
+   - **Headers**: `Content-Type: text/csv`
+   - **Query params** (all optional):
+      - `dataset_name`: friendly label used downstream; defaults to file stem.
+      - `max_rows`: integer cap for deterministic sampling (see Sampling Controls).
+   - **Body**: raw CSV bytes.
+- **Multipart endpoint**: `POST /profile/upload` accepts a `file` part and mirrors the same query params.
+- **Response**: JSON payload validated by `schemas/dashboard_plan.schema.json` and materialized via `app.schemas.DashboardPlan`.
+- **Example (PowerShell)**:
+
+   ```powershell
+   Invoke-WebRequest `
+      -Uri "http://localhost:8101/profile?dataset_name=retail_superstore&max_rows=5000" `
+      -Method Post `
+      -InFile .\samples\retail_superstore_sample.csv `
+      -ContentType 'text/csv'
+   ```
+
+### CLI/subprocess helper
+
+- `python -m app.main --help` exposes the same FastAPI app for uvicorn/agent-hosted scenarios.
+- `python scripts/profile_samples.py --inputs <csv> [...] --output-dir output` profiles local files and emits `output/output-<dataset>.json`. Agents that can call shell commands can wrap this script directly.
+
+### Tool metadata example
+
+Use the JSON schema below when wiring the HTTP endpoint into an agent framework (mirrors `DashboardPlan`).
+
+> **Microsoft Agent Framework**
+>
+> If you're using Microsoft's Agent Framework, a ready-to-import manifest lives in `agentframework/tool.profile_csv.yaml`.
+> See `agentframework/README.md` for registration steps and environment setup.
+
+```json
+{
+   "name": "profile_csv",
+   "description": "Upload CSV bytes and receive deterministic profiling JSON (dtype inference, stats, sampling metadata).",
+   "parameters": {
+      "type": "object",
+      "properties": {
+         "dataset_name": {
+            "type": "string",
+            "description": "Friendly name used in downstream plans"
+         },
+         "max_rows": {
+            "type": "integer",
+            "description": "Optional deterministic sample size"
+         },
+         "csv_base64": {
+            "type": "string",
+            "description": "Base64-encoded CSV payload",
+            "format": "byte"
+         }
+      },
+      "required": ["csv_base64"]
+   }
+}
+```
+
+Agents that support function calling (OpenAI, LangChain, Semantic Kernel) can map `csv_base64` back to binary bytes and POST them to `/profile`, then pass the response directly into their downstream planning logic.
 
 ## Profiling vs. LLM Responsibilities
 
@@ -37,7 +106,6 @@ Playground/CsvProfilerAgent/
 - If we experiment with LLM-derived context, store it separately (e.g., `llm_annotations`) and never mutate the canonical profile payload.
 - Deterministic profilers should handle arbitrary CSV schemas by inferring column types, null %, distinct counts, etc., while template adapters map those stats into the fixed JSON.
 - This split lets contract tests remain reproducible while still giving Agent Frameworks narrative insights from models when needed.
-```
 
 ## Sampling Controls
 

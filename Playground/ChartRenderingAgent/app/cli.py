@@ -15,8 +15,10 @@ from renderers import (
     AnomalyRenderer,
     CompositionRenderer,
     DistributionRenderer,
+    FunnelRenderer,
     GroupByRenderer,
     KpiRenderer,
+    ScatterRenderer,
     TimeseriesRenderer,
 )
 
@@ -36,6 +38,8 @@ def _build_registry() -> RendererRegistry:
     registry.register("distribution", DistributionRenderer())
     registry.register("outliers", AnomalyRenderer())
     registry.register("kpi", KpiRenderer())
+    registry.register("scatter", ScatterRenderer())
+    registry.register("funnel", FunnelRenderer())
     return registry
 
 

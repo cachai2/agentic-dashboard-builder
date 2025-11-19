@@ -32,6 +32,16 @@ class Settings(BaseSettings):
         validation_alias="OLLAMA_TIMEOUT_SECONDS",
         description="HTTP timeout for Ollama completions.",
     )
+    ollama_send_json_schema: bool = Field(
+        default=True,
+        validation_alias="OLLAMA_SEND_JSON_SCHEMA",
+        description="If true, include the DashboardPlan JSON schema in Ollama requests via the format parameter.",
+    )
+    ollama_force_json_mode: bool = Field(
+        default=True,
+        validation_alias="OLLAMA_FORCE_JSON_MODE",
+        description="When no schema is sent, force Ollama JSON mode to ensure structured output.",
+    )
     schema_path: Path = Field(
         default=(WORKSPACE_ROOT / "schemas" / "dashboard_plan.schema.json"),
         validation_alias="PLAN_SCHEMA_PATH",

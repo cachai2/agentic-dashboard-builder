@@ -1,0 +1,10 @@
+segment,marketing_spend,nps,customers,region
+Enterprise,420000,62,45,NA
+Enterprise,360000,58,38,EU
+Enterprise,390000,65,44,APAC
+Growth,180000,54,80,NA
+Growth,160000,52,72,EU
+Growth,150000,50,70,APAC
+SMB,90000,47,140,NA
+SMB,85000,45,128,EU
+SMB,80000,43,120,APAC

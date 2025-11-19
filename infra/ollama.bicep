@@ -28,7 +28,7 @@ resource ollamaApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
     configuration: {
       ingress: {
         external: false
-        targetPort: 11434
+        targetPort: 8801
         allowInsecure: true
       }
       registries: [
@@ -67,8 +67,12 @@ resource ollamaApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
               value: '32768'
             }
             {
-                name: 'OLLAMA_KEEP_ALIVE'
-                value: '15m'
+              name: 'OLLAMA_KEEP_ALIVE'
+              value: '15m'
+            }
+            {
+              name: 'PORT'
+              value: '8801'
             }
           ]
           resources: {

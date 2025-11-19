@@ -1,0 +1,336 @@
+{
+  "timestamp": "2025-11-19T19:58:03Z",
+  "dataset": "samples/citibike_trips_sample.csv",
+  "profile": {
+    "dataset_name": "citibike_trips_sample",
+    "row_count": 10000,
+    "sampled_row_count": 10000,
+    "sampling_ratio": 1.0,
+    "column_count": 12,
+    "generated_at": "2025-11-19T19:58:03.694196Z",
+    "columns": [
+      {
+        "name": "ride_id",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 10000,
+        "example": "20240618-00000",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "20240618-00000",
+              "count": 1,
+              "percent": 0.01
+            },
+            {
+              "value": "20240610-00001",
+              "count": 1,
+              "percent": 0.01
+            },
+            {
+              "value": "20240601-00002",
+              "count": 1,
+              "percent": 0.01
+            },
+            {
+              "value": "20240620-00003",
+              "count": 1,
+              "percent": 0.01
+            },
+            {
+              "value": "20240611-00004",
+              "count": 1,
+              "percent": 0.01
+            }
+          ]
+        }
+      },
+      {
+        "name": "rideable_type",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 2,
+        "example": "electric_bike",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "classic_bike",
+              "count": 5017,
+              "percent": 50.17
+            },
+            {
+              "value": "electric_bike",
+              "count": 4983,
+              "percent": 49.83
+            }
+          ]
+        }
+      },
+      {
+        "name": "started_at",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 8918,
+        "example": "2024-06-18T11:49:00",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "2024-06-13T13:04:00",
+              "count": 4,
+              "percent": 0.04
+            },
+            {
+              "value": "2024-06-15T09:47:00",
+              "count": 4,
+              "percent": 0.04
+            },
+            {
+              "value": "2024-06-03T23:50:00",
+              "count": 4,
+              "percent": 0.04
+            },
+            {
+              "value": "2024-06-21T06:53:00",
+              "count": 4,
+              "percent": 0.04
+            },
+            {
+              "value": "2024-06-18T04:31:00",
+              "count": 3,
+              "percent": 0.03
+            }
+          ]
+        }
+      },
+      {
+        "name": "ended_at",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 9987,
+        "example": "2024-06-18T12:19:51",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "2024-06-04T10:11:39",
+              "count": 2,
+              "percent": 0.02
+            },
+            {
+              "value": "2024-06-12T16:35:32",
+              "count": 2,
+              "percent": 0.02
+            },
+            {
+              "value": "2024-06-03T02:41:56",
+              "count": 2,
+              "percent": 0.02
+            },
+            {
+              "value": "2024-06-25T09:13:33",
+              "count": 2,
+              "percent": 0.02
+            },
+            {
+              "value": "2024-06-02T14:58:54",
+              "count": 2,
+              "percent": 0.02
+            }
+          ]
+        }
+      },
+      {
+        "name": "start_station_name",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 6,
+        "example": "Bond St & Schermerhorn St",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "Broadway & E 22 St",
+              "count": 1737,
+              "percent": 17.37
+            },
+            {
+              "value": "W 52 St & 5 Ave",
+              "count": 1680,
+              "percent": 16.8
+            },
+            {
+              "value": "Lafayette St & E 8 St",
+              "count": 1669,
+              "percent": 16.69
+            },
+            {
+              "value": "Metropolitan Ave & Meeker Ave",
+              "count": 1668,
+              "percent": 16.68
+            },
+            {
+              "value": "Pershing Square N",
+              "count": 1648,
+              "percent": 16.48
+            }
+          ]
+        }
+      },
+      {
+        "name": "end_station_name",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 6,
+        "example": "Lafayette St & E 8 St",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "Bond St & Schermerhorn St",
+              "count": 1705,
+              "percent": 17.05
+            },
+            {
+              "value": "Lafayette St & E 8 St",
+              "count": 1683,
+              "percent": 16.83
+            },
+            {
+              "value": "W 52 St & 5 Ave",
+              "count": 1681,
+              "percent": 16.81
+            },
+            {
+              "value": "Broadway & E 22 St",
+              "count": 1654,
+              "percent": 16.54
+            },
+            {
+              "value": "Pershing Square N",
+              "count": 1649,
+              "percent": 16.49
+            }
+          ]
+        }
+      },
+      {
+        "name": "member_casual",
+        "semantic_type": "categorical",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 2,
+        "example": "member",
+        "numeric_stats": null,
+        "categorical_stats": {
+          "top_values": [
+            {
+              "value": "casual",
+              "count": 5024,
+              "percent": 50.24
+            },
+            {
+              "value": "member",
+              "count": 4976,
+              "percent": 49.76
+            }
+          ]
+        }
+      },
+      {
+        "name": "trip_duration_sec",
+        "semantic_type": "numeric",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 3281,
+        "example": "1851",
+        "numeric_stats": {
+          "min": 120.0,
+          "max": 3600.0,
+          "mean": 1862.0915,
+          "stddev": 1010.2060371783101,
+          "p05": 286.0,
+          "p95": 3436.0
+        },
+        "categorical_stats": null
+      },
+      {
+        "name": "start_lat",
+        "semantic_type": "numeric",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 5888,
+        "example": "40.688176",
+        "numeric_stats": {
+          "min": 40.687718,
+          "max": 40.759191,
+          "mean": 40.7309291507,
+          "stddev": 0.02347819824894772,
+          "p05": 40.688167,
+          "p95": 40.75877505
+        },
+        "categorical_stats": null
+      },
+      {
+        "name": "start_lng",
+        "semantic_type": "numeric",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 5661,
+        "example": "-73.984107",
+        "numeric_stats": {
+          "min": -73.99196,
+          "max": -73.950883,
+          "mean": -73.9789597563,
+          "stddev": 0.013256457771651332,
+          "p05": -73.99153715,
+          "p95": -73.95130595
+        },
+        "categorical_stats": null
+      },
+      {
+        "name": "end_lat",
+        "semantic_type": "numeric",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 5800,
+        "example": "40.730256",
+        "numeric_stats": {
+          "min": 40.687718,
+          "max": 40.75919,
+          "mean": 40.730465958900005,
+          "stddev": 0.023839362662722897,
+          "p05": 40.688160950000004,
+          "p95": 40.758785
+        },
+        "categorical_stats": null
+      },
+      {
+        "name": "end_lng",
+        "semantic_type": "numeric",
+        "null_count": 0,
+        "null_pct": 0.0,
+        "distinct_count": 5635,
+        "example": "-73.991055",
+        "numeric_stats": {
+          "min": -73.991958,
+          "max": -73.950883,
+          "mean": -73.9790583144,
+          "stddev": 0.013120248674917817,
+          "p05": -73.99156005,
+          "p95": -73.95133195
+        },
+        "categorical_stats": null
+      }
+    ],
+    "llm_annotations": null
+  }
+}

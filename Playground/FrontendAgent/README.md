@@ -7,6 +7,7 @@ Prototype the upload → reasoning → dashboard experience without relying on t
 - **CSV → dashboard loop**: drag/drop uploader, orchestrator status timeline, KPI grid, and Plotly/iframe dashboard preview. All state flows through `usePlannerSession` which can swap between the real REST bridge and the local mock.
 - **Mock planner + API server**: the UI uses `services/mockPlanner.ts`, while `npm run mock-api` hosts the `/upload`, `/dashboard/status`, `/dashboard/view` endpoints expected from `app/main.py`.
 - **Component gallery**: append `?gallery=1` or tap the hero toggle to explore documented components (Uploader, StatusTimeline, MetricsGrid, ErrorBanner, DashboardViewer) without Storybook overhead.
+- **Guided story arc**: the step indicator and dashboard placeholder keep demo audiences oriented from upload to insights, even before data renders.
 - **Smoke coverage**: Playwright tests exercise upload success, validation errors, and retry/reset flows with the dev server auto-booted.
 - **Debug + telemetry hooks**: `window.DashboardDemo` exposes the latest session + plan, and `trackEvent` is wired for Application Insights once a connection string is provided.
 

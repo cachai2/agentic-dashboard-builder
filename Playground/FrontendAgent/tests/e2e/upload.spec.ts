@@ -12,7 +12,7 @@ const uploadCsv = async (page: Page) => {
   await page.setInputFiles('input[type="file"]', fixturePath)
   await page.getByLabel('Scenario name').fill('Demo scenario upload')
   await page.getByLabel('Objective').fill('Validate happy path smoke test')
-  await page.getByRole('button', { name: /Upload & plan/i }).click()
+  await page.getByRole('button', { name: /Generate dashboard/i }).click()
 }
 
 test.describe('CSV upload flow', () => {
@@ -26,7 +26,7 @@ test.describe('CSV upload flow', () => {
 
   test('shows validation helper when missing file', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: /Upload & plan/i }).click()
+    await page.getByRole('button', { name: /Generate dashboard/i }).click()
     await expect(page.getByText('Upload a CSV to get started')).toBeVisible()
   })
 

@@ -148,6 +148,47 @@ class KPISection(BaseModel):
     layout: Literal["grid", "row"] = "grid"
 
 
+class ScatterQuadrantConfig(BaseModel):
+    x: float
+    y: float
+    labels: Optional[List[str]] = None
+
+
+class ScatterOptions(BaseModel):
+    trendline: bool = True
+    opacity: float = Field(default=0.85, ge=0.1, le=1)
+
+
+class ScatterSection(BaseModel):
+    operation: Literal["scatter"]
+    title: Optional[str] = None
+    dataset: str
+    x: str
+    y: str
+    size: Optional[str] = None
+    color: Optional[str] = None
+    text: Optional[str] = None
+    tooltip_fields: List[str] = Field(default_factory=list)
+    quadrant: Optional[ScatterQuadrantConfig] = None
+    options: ScatterOptions = Field(default_factory=ScatterOptions)
+
+
+class FunnelOptions(BaseModel):
+    show_conversion: bool = True
+    show_delta: bool = True
+
+
+class FunnelSection(BaseModel):
+    operation: Literal["funnel"]
+    title: Optional[str] = None
+    dataset: str
+    stage_column: str
+    value_column: str
+    comparison_column: Optional[str] = None
+    stages: List[str] = Field(default_factory=list)
+    options: FunnelOptions = Field(default_factory=FunnelOptions)
+
+
 SectionType = Annotated[
     Union[
         TimeseriesSection,
@@ -156,6 +197,8 @@ SectionType = Annotated[
         DistributionSection,
         AnomalySection,
         KPISection,
+        ScatterSection,
+        FunnelSection,
     ],
     Field(discriminator="operation"),
 ]

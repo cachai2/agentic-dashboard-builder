@@ -44,6 +44,17 @@ Playground/ChartRenderingAgent/
 | **Anomaly & Outlier** | `outliers`, `quality_gate` | Scatter/line hybrid with highlighted points and annotation cards | Pin annotations in right gutter so chart stays clean; support drill link payloads |
 | **KPI Scorecards** | `kpi`, `headline` | Grid of tiles with big number, trend sparkline, badge for status | Auto-fit 3 cards per row on desktop, degrade to horizontal swipe on mobile embed |
 
+### Chart Tool Labels for LLM Prompts
+
+| Operation ID | Friendly Label | One-line Description | Data Expectations |
+| --- | --- | --- | --- |
+| `timeseries` | "Multi-series timeline with forecast band" | Plots 1–3 metrics over time, optionally adding previous-period overlays, forecast intervals, and event markers. | Requires datetime `x` column, at least one numeric series, optional forecast lower/upper columns and event rows. |
+| `groupby` | "Ranked bar comparison" | Aggregates a categorical dimension (e.g., region, segment) into a sorted bar chart with optional orientation flips and reference line. | Needs categorical dimension + numeric metric; accepts aggregation (`sum`, `avg`, etc.) and Top-N limit. |
+| `composition` | "Stacked share breakdown" | Shows how multiple components contribute to a whole over time (stacked area) or within a single period (stacked bar), with optional percentage normalization. | Requires stacks array of numeric columns; time axis optional (only for stacked area). |
+| `distribution` | "Histogram with density + boxplot" | Summarizes numeric spread via histogram bins, an optional density overlay line, and a horizontal boxplot for quick quartile inspection. | Needs a single numeric metric column plus optional overlay/density toggle. |
+| `outliers` | "Thresholded anomaly tracker" | Renders a metric over time, highlights points that cross a threshold or flagged column, and calls out annotated events. | Requires datetime `x`, numeric `y`, optional threshold config or `flag_column`, optional events. |
+| `kpi` | "KPI tile grid" | Pure HTML cards that show big numbers, deltas, and micro-sparklines without requiring a dataset. | Expects inline card definitions with `value`, optional `delta`, and sparkline array. |
+
 ### Sample Planner Payloads
 
 ```json
@@ -188,6 +199,17 @@ KPI Tiles
 | `outliers` | `renderers/anomaly.py` | Line + anomaly markers + threshold/event annotations | `tests/data/sample_anomaly.csv` |
 | `kpi` | `renderers/kpi.py` | Pure HTML tile grid with delta badges and sparklines | Inline plan payload |
 
+## Future Chart Backlog
+
+| Priority | Proposed Operation | Description | Why It Matters | Notes |
+| --- | --- | --- | --- | --- |
+| P0 | `scatter_correlation` | Dual-metric scatter with sized/colored points and optional regression + quadrant annotations. | Unlocks correlation discovery (e.g., revenue vs. satisfaction). | Needs dataset with two numeric columns plus optional grouping. |
+| P0 | `funnel` | Stage-by-stage funnel bars showing conversion ratios and deltas vs. prior period. | Critical for growth/product teams monitoring drop-off. | Requires ordered stage field, counts per stage, optional comparison dataset. |
+| P1 | `waterfall` | Waterfall columns breaking down contributions from baseline to final value. | Explains drivers of YoY movements or budget variances. | Input: ordered steps with `delta` and `type` (increase/decrease/subtotal). |
+| P1 | `heatmap_calendar` | Calendar/heatmap grid to visualize metric seasonality (e.g., daily sessions). | Highlights weekly/seasonal patterns quickly. | Needs date column + metric; optional aggregation grain. |
+| P2 | `treemap` | Hierarchical treemap or sunburst for nested categories (product -> subcategory). | Communicates hierarchy share-of-voice better than stacked bars for many segments. | Needs parent-child pairs with metric values. |
+| P2 | `control_chart` | Statistical process control line chart with dynamic control limits (μ ± 3σ). | Useful for operational monitoring to distinguish noise vs. signal. | Reuses timeseries dataset with computed bounds. |
+
 All renderers are wired through `app/registry.py`, surfaced via the CLI (`python -m app.cli render --plan tests/data/sample_plan.json --out build/sample.html`), and covered by regression tests in `tests/test_timeseries_renderer.py`.
 
 ## Integration Guidance
@@ -232,3 +254,14 @@ All renderers are wired through `app/registry.py`, surfaced via the CLI (`python
    ```powershell
    pytest
    ```
+
+## Sample Data Preprocessing
+
+- The raw Telco churn export (`samples/telco_churn.csv`) comes directly from Kaggle and keeps the original string-typed numerics and inconsistent category labels.
+- Run the preprocessing helper whenever you refresh the dataset so downstream renderers can rely on consistent columns:
+
+   ```powershell
+   .\.venv\Scripts\python.exe -m app.preprocess_telco --input samples/telco_churn.csv --output samples/telco_churn_clean.csv
+   ```
+
+- The enriched output adds numeric `TotalCharges`, tenure bands, Yes/No boolean flags, add-on counts, contract length in months, and helper metrics like `monthly_charges_zscore`. Point dashboards at `samples/telco_churn_clean.csv` to skip per-chart munging.

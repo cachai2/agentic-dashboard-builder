@@ -40,7 +40,7 @@ def test_plan_endpoint_retries_when_initial_response_invalid(monkeypatch):
     responses = ["not json", (SAMPLES / "mock_plan.json").read_text()]
     call_tracker = {"count": 0}
 
-    def fake_generate_prompt(prompt_bundle):
+    def fake_generate_prompt(prompt_bundle, response_schema=None):
         idx = min(call_tracker["count"], len(responses) - 1)
         call_tracker["count"] += 1
         return responses[idx]

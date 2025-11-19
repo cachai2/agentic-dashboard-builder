@@ -5,13 +5,13 @@ services:
     language: python
     host: containerapp
     docker:
-      path: ./Dockerfile.cpu
+      path: ./app/Dockerfile.cpu
   gpu-planner:
     project: .
     language: python
     host: containerapp
     docker:
-      path: ./Dockerfile.gpu
+      path: ./app/ollama_service/Dockerfile
 infra:
   provider: bicep
   path: infra

@@ -2,11 +2,11 @@
   background: linear-gradient(145deg, rgba(19, 30, 59, 0.9), rgba(11, 17, 33, 0.95));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 24px;
+  padding: 22px;
   box-shadow: var(--shadow-panel);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .header {
@@ -19,7 +19,7 @@
 .titleBlock {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .title {
@@ -29,5 +29,5 @@
 
 .helper {
   color: var(--color-text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }

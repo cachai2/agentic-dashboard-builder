@@ -72,7 +72,11 @@ def main() -> None:
             print(f"Skipping unsupported file: {dataset_path.name}")
             continue
 
-        df = _load_dataframe(dataset_path, suffix)
+        try:
+            df = _load_dataframe(dataset_path, suffix)
+        except Exception as exc:
+            print(f"Skipping {dataset_path.name}: {exc}")
+            continue
         if df.empty:
             print(f"Skipping empty dataset: {dataset_path.name}")
             continue

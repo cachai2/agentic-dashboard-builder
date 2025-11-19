@@ -1,8 +1,10 @@
 """Render DashboardPlan sections via AutoViz."""
 from __future__ import annotations
 
+from html import escape
 from pathlib import Path
-from typing import Any, Mapping
+import shutil
+from typing import Any, Iterable, Mapping
 
 from .base import AdapterResult, BaseAdapter
 from .utils import dataset_to_dataframe
@@ -17,31 +19,52 @@ class AutoVizAdapter(BaseAdapter):
         dep_var = section.get("encodings", {}).get("y", "")
         output_path = self._validated_output_path(self.output_path)
 
-        av = self._autoviz_class()
-        autoviz_result = av.AutoViz(
-            filename="",
-            sep=",",
-            depVar=dep_var,
-            dfte=dataset,
-            header=0,
-            verbose=0,
-            lowess=False,
-            chart_format="html",
-            max_rows_analyzed=min(len(dataset), 5000),
-            max_cols_analyzed=len(dataset.columns),
-            save_plot_dir=None,
-        )
+        temp_dir = output_path.parent / f"{output_path.stem}_autoviz"
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir)
+        temp_dir.mkdir(parents=True, exist_ok=True)
 
-        chart_html = self._extract_chart_html(autoviz_result)
+        av = self._autoviz_class()
+
+        def _run_autoviz(current_dep: str) -> None:
+            av.AutoViz(
+                filename="",
+                sep=",",
+                depVar=current_dep,
+                dfte=dataset,
+                header=0,
+                verbose=0,
+                lowess=False,
+                chart_format="html",
+                max_rows_analyzed=min(len(dataset), 5000),
+                max_cols_analyzed=len(dataset.columns),
+                save_plot_dir=str(temp_dir),
+            )
+
+        try:
+            _run_autoviz(dep_var)
+        except ValueError as exc:
+            if dep_var:
+                # Some AutoViz builds error when saving charts with certain dep vars; retry without.
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                temp_dir.mkdir(parents=True, exist_ok=True)
+                dep_var = ""
+                _run_autoviz(dep_var)
+            else:
+                raise exc
+
+        chart_html = self._combine_autoviz_html(section.get("title", output_path.stem), temp_dir.rglob("*.html"))
         if not chart_html:
-            raise RuntimeError("AutoViz did not return HTML output; ensure chart_format='html'.")
+            raise RuntimeError("AutoViz did not emit any HTML files; ensure chart_format='html'.")
 
         output_path.write_text(chart_html, encoding="utf-8")
+        shutil.rmtree(temp_dir, ignore_errors=True)
         metadata = {
             "adapter": self.name,
             "rows": len(dataset),
             "columns": list(dataset.columns),
             "depVar": dep_var or None,
+            "charts": chart_html.count("<iframe"),
         }
         return AdapterResult(output_path, metadata)
 
@@ -70,23 +93,45 @@ class AutoVizAdapter(BaseAdapter):
         return path
 
     @staticmethod
-    def _extract_chart_html(result: Any) -> str:
-        """Handle version-dependent return shapes from AutoViz."""
-        if isinstance(result, str):
-            return result.strip()
+    def _combine_autoviz_html(title: str | None, html_files: Iterable[Path]) -> str:
+        files = sorted(html_files)
+        if not files:
+            return ""
 
-        if isinstance(result, Mapping):
-            candidate = result.get("chart_html") or result.get("html")
-            return candidate.strip() if isinstance(candidate, str) else ""
+        sections: list[str] = []
+        for idx, file_path in enumerate(files, start=1):
+            raw_html = file_path.read_text(encoding="utf-8")
+            section_title = f"Chart {idx}: {file_path.stem.replace('_', ' ').title()}"
+            sections.append(
+                "\n".join(
+                    [
+                        f"<section>",
+                        f"  <h2>{escape(section_title)}</h2>",
+                        "  <iframe",
+                        "    loading=\"lazy\"",
+                        "    style=\"width:100%;height:600px;border:1px solid #ddd;margin-bottom:1rem;\"",
+                        f"    srcdoc=\"{escape(raw_html, quote=True)}\"></iframe>",
+                        "</section>",
+                    ]
+                )
+            )
 
-        if isinstance(result, (list, tuple)):
-            # AutoViz commonly returns (df, html) or (df, html, figs).
-            for item in reversed(result):
-                if isinstance(item, str) and item.strip():
-                    return item.strip()
-                if isinstance(item, Mapping):
-                    candidate = item.get("chart_html") or item.get("html")
-                    if isinstance(candidate, str) and candidate.strip():
-                        return candidate.strip()
-
-        return ""
+        heading = escape(title) if title else "AutoViz Dashboard"
+        body = "\n".join(sections)
+        return (
+            "<!DOCTYPE html>\n"
+            "<html lang='en'>\n"
+            "<head>\n"
+            "  <meta charset='utf-8'/>\n"
+            f"  <title>{heading}</title>\n"
+            "  <style>body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:1rem;background:#f9fafb;}"
+            "h1{font-size:1.5rem;margin-top:0;}h2{font-size:1.1rem;margin:1.5rem 0 0.5rem;}"
+            "section{background:#fff;padding:1rem;border-radius:0.5rem;box-shadow:0 1px 3px rgba(0,0,0,0.1);"
+            "margin-bottom:1rem;}iframe{background:#fff;}" "</style>\n"
+            "</head>\n"
+            "<body>\n"
+            f"  <h1>{heading}</h1>\n"
+            f"  {body}\n"
+            "</body>\n"
+            "</html>"
+        )

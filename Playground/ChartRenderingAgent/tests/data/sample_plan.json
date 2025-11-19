@@ -4,7 +4,9 @@
     {"id": "region_rev", "path": "tests/data/sample_groupby.csv", "format": "csv"},
     {"id": "mix", "path": "tests/data/sample_composition.csv", "format": "csv"},
     {"id": "latency", "path": "tests/data/sample_distribution.csv", "format": "csv"},
-    {"id": "errors", "path": "tests/data/sample_anomaly.csv", "format": "csv"}
+    {"id": "errors", "path": "tests/data/sample_anomaly.csv", "format": "csv"},
+    {"id": "segments", "path": "tests/data/sample_scatter.csv", "format": "csv"},
+    {"id": "funnel", "path": "tests/data/sample_funnel.csv", "format": "csv"}
   ],
   "sections": [
     {
@@ -84,6 +86,29 @@
           "trend": [0.038, 0.035, 0.033, 0.031]
         }
       ]
+    },
+    {
+      "operation": "scatter",
+      "title": "Spend vs NPS",
+      "dataset": "segments",
+      "x": "marketing_spend",
+      "y": "nps",
+      "size": "customers",
+      "color": "segment",
+      "text": "region",
+      "tooltip_fields": ["customers", "region"],
+      "quadrant": {"x": 200000, "y": 55, "labels": ["Low Spend / Low NPS", "High Spend / Low NPS", "Low Spend / High NPS", "High Spend / High NPS"]},
+      "options": {"trendline": true, "opacity": 0.9}
+    },
+    {
+      "operation": "funnel",
+      "title": "Growth Funnel",
+      "dataset": "funnel",
+      "stage_column": "stage",
+      "value_column": "count",
+      "comparison_column": "prev_count",
+      "stages": ["Visited", "Signed Up", "Activated", "Subscribed", "Retained"],
+      "options": {"show_conversion": true, "show_delta": true}
     }
   ]
 }

@@ -1,0 +1,40 @@
+{
+  "title": "Revenue Pulse",
+  "description": "Quick overview of revenue, volume, and regional mix.",
+  "sections": [
+    {
+      "title": "Trend",
+      "charts": [
+        {
+          "id": "rev_timeseries",
+          "type": "line",
+          "query": {
+            "operation": "timeseries_agg",
+            "x": "order_date",
+            "y": "revenue",
+            "agg": "sum",
+            "time_grain": "week"
+          },
+          "insight": "Revenue trending upward week over week."
+        }
+      ]
+    },
+    {
+      "title": "Regional Mix",
+      "charts": [
+        {
+          "id": "region_bar",
+          "type": "bar",
+          "query": {
+            "operation": "groupby_agg",
+            "dimension": "region",
+            "metric": "revenue",
+            "agg": "sum",
+            "top_k": 5
+          },
+          "insight": "West region leads share."
+        }
+      ]
+    }
+  ]
+}

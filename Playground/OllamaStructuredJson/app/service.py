@@ -47,7 +47,7 @@ def plan(request: PlanRequest) -> PlanResponse:
         attempts = attempt + 1
         raw_response = ""
         try:
-            raw_response = client.generate_plan_text(prompt_bundle)
+            raw_response = client.generate_plan_text(prompt_bundle, validator.schema)
             plan = validator.parse_and_validate(raw_response)
             metadata = PlanMetadata(
                 prompt_version=request.prompt_version,

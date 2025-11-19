@@ -11,8 +11,10 @@ from renderers import (
     AnomalyRenderer,
     CompositionRenderer,
     DistributionRenderer,
+    FunnelRenderer,
     GroupByRenderer,
     KpiRenderer,
+    ScatterRenderer,
     TimeseriesRenderer,
 )
 
@@ -93,3 +95,28 @@ def test_kpi_renderer_outputs_html():
 
     assert "kpi-card" in artifact.html
     assert artifact.metadata["card_count"] == len(section.cards)
+
+
+def test_scatter_renderer_outputs_html():
+    plan = load_plan()
+    section = next(sec for sec in plan.sections if sec.operation == "scatter")
+    renderer = ScatterRenderer()
+    df = load_dataset(plan, section.dataset)
+    artifact = renderer.render(section, df)
+
+    assert "plotly" in artifact.html
+    assert artifact.metadata["points"] == len(df)
+    assert artifact.metadata["uses_size"] is True
+
+
+def test_funnel_renderer_outputs_html():
+    plan = load_plan()
+    section = next(sec for sec in plan.sections if sec.operation == "funnel")
+    renderer = FunnelRenderer()
+    df = load_dataset(plan, section.dataset)
+    artifact = renderer.render(section, df)
+
+    expected_stage_count = len(section.stages) or len(df)
+    assert "plotly" in artifact.html
+    assert artifact.metadata["stage_count"] == expected_stage_count
+    assert artifact.metadata["show_conversion"] is True
