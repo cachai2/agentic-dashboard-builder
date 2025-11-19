@@ -1,0 +1,79 @@
+{
+  "title": "Marketing Attribution Deep Dive",
+  "sections": [
+    {
+      "id": "channel_roi",
+      "title": "Channel ROI Comparison",
+      "chartType": "bar",
+      "encodings": {
+        "x": "channel",
+        "y": "roi",
+        "color": "funnel_stage"
+      },
+      "labels": {
+        "channel": "Acquisition Channel",
+        "roi": "ROI (%)"
+      },
+      "dataset": {
+        "columns": ["channel", "roi", "funnel_stage"],
+        "rows": [
+          ["Paid Search", 128, "Awareness"],
+          ["Paid Search", 142, "Consideration"],
+          ["Organic", 156, "Awareness"],
+          ["Organic", 168, "Consideration"],
+          ["Email", 134, "Awareness"],
+          ["Email", 148, "Consideration"],
+          ["Partner", 118, "Awareness"],
+          ["Partner", 121, "Consideration"]
+        ]
+      }
+    },
+    {
+      "id": "spend_vs_leads",
+      "title": "Spend vs Leads Generated",
+      "chartType": "scatter",
+      "encodings": {
+        "x": "spend",
+        "y": "leads",
+        "color": "channel"
+      },
+      "labels": {
+        "spend": "Monthly Spend (USD)",
+        "leads": "Qualified Leads"
+      },
+      "dataset": {
+        "records": [
+          {"channel": "Paid Search", "spend": 85000, "leads": 420},
+          {"channel": "Organic", "spend": 30000, "leads": 390},
+          {"channel": "Email", "spend": 18000, "leads": 210},
+          {"channel": "Partner", "spend": 26000, "leads": 170},
+          {"channel": "Events", "spend": 42000, "leads": 240}
+        ]
+      }
+    },
+    {
+      "id": "lead_velocity",
+      "title": "Lead Velocity Index",
+      "chartType": "line",
+      "suite": "train_test_validation",
+      "encodings": {
+        "x": "month",
+        "y": "lvi"
+      },
+      "labels": {
+        "month": "Month",
+        "lvi": "Lead Velocity Index"
+      },
+      "dataset": {
+        "records": [
+          {"month": "Jan", "lvi": 1.08},
+          {"month": "Feb", "lvi": 1.12},
+          {"month": "Mar", "lvi": 1.15},
+          {"month": "Apr", "lvi": 1.09},
+          {"month": "May", "lvi": 1.18},
+          {"month": "Jun", "lvi": 1.22}
+        ]
+      }
+    }
+  ]
+}

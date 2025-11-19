@@ -1,0 +1,54 @@
+{
+  "title": "Sample Dashboard Plan",
+  "sections": [
+    {
+      "id": "revenue_by_region",
+      "title": "Quarterly Revenue by Region",
+      "chartType": "bar",
+      "encodings": {
+        "x": "region",
+        "y": "revenue",
+        "color": "channel"
+      },
+      "labels": {
+        "region": "Region",
+        "revenue": "Revenue (USD)"
+      },
+      "dataset": {
+        "columns": ["region", "revenue", "channel"],
+        "rows": [
+          ["Americas", 125000, "Direct"],
+          ["Americas", 98000, "Partner"],
+          ["EMEA", 112000, "Direct"],
+          ["EMEA", 76000, "Partner"],
+          ["APAC", 134000, "Direct"],
+          ["APAC", 88000, "Partner"]
+        ]
+      }
+    },
+    {
+      "id": "pipeline_velocity",
+      "title": "Pipeline Velocity",
+      "chartType": "line",
+      "suite": "data_integrity",
+      "encodings": {
+        "x": "month",
+        "y": "days"
+      },
+      "labels": {
+        "month": "Month",
+        "days": "Days in Stage"
+      },
+      "dataset": {
+        "records": [
+          {"month": "Jan", "days": 32},
+          {"month": "Feb", "days": 29},
+          {"month": "Mar", "days": 28},
+          {"month": "Apr", "days": 26},
+          {"month": "May", "days": 27},
+          {"month": "Jun", "days": 25}
+        ]
+      }
+    }
+  ]
+}

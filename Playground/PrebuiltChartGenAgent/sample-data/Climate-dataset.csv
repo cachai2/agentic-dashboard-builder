@@ -1,0 +1,11 @@
+Date,City,AverageTempC,PrecipitationMm,WindSpeedKph,AirQualityIndex
+2025-01-01,Seattle,6.4,12.3,18,42
+2025-01-02,Seattle,5.9,8.1,22,45
+2025-01-03,Seattle,7.1,0.0,15,38
+2025-01-04,Seattle,8.5,4.2,13,36
+2025-01-05,Seattle,9.2,0.0,11,33
+2025-02-01,Phoenix,16.8,0.0,12,28
+2025-02-02,Phoenix,17.4,0.0,10,26
+2025-02-03,Phoenix,18.1,0.0,14,25
+2025-02-04,Phoenix,19.7,0.0,16,24
+2025-02-05,Phoenix,21.3,0.0,18,23

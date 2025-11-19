@@ -1,0 +1,5 @@
+route_id,mode,origin,destination,departures_per_day,avg_ridership,on_time_performance_pct
+R-001,LightRail,North Hub,Waterfront,28,18450,96.2
+R-002,BusRapidTransit,University District,Downtown,42,11280,91.4
+R-003,Ferry,Harbor Point,Island View,16,5200,88.7
+R-004,BikeShare,Innovation Park,Arts Quarter,310,2670,99.5

@@ -1,0 +1,17 @@
+{
+  "dataset": {
+    "row_count": 12500,
+    "column_count": 12,
+    "columns": [
+      {"name": "order_date", "dtype": "datetime", "null_pct": 0.0},
+      {"name": "region", "dtype": "string", "null_pct": 0.01},
+      {"name": "revenue", "dtype": "float", "null_pct": 0.0},
+      {"name": "units", "dtype": "integer", "null_pct": 0.0}
+    ]
+  },
+  "metrics": {
+    "total_revenue": 1280000,
+    "avg_units": 4.3,
+    "top_regions": ["West", "Central", "East"]
+  }
+}

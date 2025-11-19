@@ -1,0 +1,25 @@
+@import './tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background: radial-gradient(circle at top, #13203a, #050814 65%);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.35);
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}

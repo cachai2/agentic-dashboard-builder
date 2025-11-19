@@ -1,0 +1,3 @@
+# Optional dependencies for AutoViz and Deepchecks adapters
+autoviz>=0.1.905
+deepchecks>=0.18.1

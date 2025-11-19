@@ -1,0 +1,17 @@
+name: ignite-autodash
+services:
+  cpu-app:
+    project: .
+    language: python
+    host: containerapp
+    docker:
+      path: ./Dockerfile.cpu
+  gpu-planner:
+    project: .
+    language: python
+    host: containerapp
+    docker:
+      path: ./Dockerfile.gpu
+infra:
+  provider: bicep
+  path: infra

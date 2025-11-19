@@ -1,0 +1,21 @@
+warehouse,product_category,month,on_time_rate,shipments,backorder_rate,region
+Dallas,Electronics,2024-01,0.94,1820,0.06,Southwest
+Dallas,Home Goods,2024-01,0.91,950,0.08,Southwest
+Chicago,Electronics,2024-01,0.96,2050,0.04,Midwest
+Chicago,Home Goods,2024-01,0.93,1180,0.07,Midwest
+Los Angeles,Electronics,2024-01,0.89,1740,0.11,West
+Dallas,Electronics,2024-02,0.95,1885,0.05,Southwest
+Dallas,Home Goods,2024-02,0.92,990,0.07,Southwest
+Chicago,Electronics,2024-02,0.97,2115,0.03,Midwest
+Chicago,Home Goods,2024-02,0.94,1225,0.06,Midwest
+Los Angeles,Electronics,2024-02,0.90,1792,0.10,West
+Dallas,Electronics,2024-03,0.96,1942,0.04,Southwest
+Dallas,Home Goods,2024-03,0.93,1028,0.06,Southwest
+Chicago,Electronics,2024-03,0.97,2180,0.03,Midwest
+Chicago,Home Goods,2024-03,0.95,1286,0.05,Midwest
+Los Angeles,Electronics,2024-03,0.91,1850,0.09,West
+Dallas,Electronics,2024-04,0.97,2010,0.03,Southwest
+Dallas,Home Goods,2024-04,0.94,1084,0.05,Southwest
+Chicago,Electronics,2024-04,0.98,2245,0.02,Midwest
+Chicago,Home Goods,2024-04,0.96,1340,0.04,Midwest
+Los Angeles,Electronics,2024-04,0.92,1898,0.08,West

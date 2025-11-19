@@ -1,0 +1,10 @@
+AdmissionDate,Hospital,Department,AverageWaitMinutes,BedOccupancyPct,ReadmissionRatePct
+2025-04-01,Mercy General,Emergency,42,88.5,12.3
+2025-04-01,Mercy General,Cardiology,28,92.1,9.7
+2025-04-01,Mercy General,Oncology,35,85.9,7.4
+2025-04-02,Lakeside Medical,Emergency,31,79.2,10.8
+2025-04-02,Lakeside Medical,Pediatrics,19,83.3,5.1
+2025-04-02,Lakeside Medical,Orthopedics,24,77.8,6.5
+2025-04-03,Cityview Clinic,Emergency,55,94.0,13.2
+2025-04-03,Cityview Clinic,Neurology,27,88.4,8.9
+2025-04-03,Cityview Clinic,Maternity,22,91.6,4.3

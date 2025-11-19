@@ -1,0 +1,6 @@
+order_date,region,category,revenue,customer_id
+2025-01-01,NA,Electronics,1200,C001
+2025-01-02,NA,Home,300,C002
+2025-01-03,EMEA,Electronics,800,C003
+2025-01-04,APAC,Apparel,150,C004
+2025-01-05,NA,Electronics,400,C001

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sample Dashboard</title>
+    <style>
+      body {
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        background: #0f172a;
+        color: #f8fafc;
+        margin: 0;
+        padding: 24px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        padding: 16px;
+        background: rgba(15, 23, 42, 0.8);
+      }
+      iframe {
+        width: 100%;
+        border: none;
+      }
+    </style>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  </head>
+  <body>
+    <h2>Agent generated highlights</h2>
+    <div class="grid">
+      <div id="chart-a" class="card"></div>
+      <div id="chart-b" class="card"></div>
+    </div>
+    <script>
+      const randomize = () => Math.round(Math.random() * 20)
+      Plotly.newPlot('chart-a', [
+        {
+          type: 'bar',
+          x: ['North America', 'EMEA', 'APAC', 'LATAM'],
+          y: [48, 52, 37, 29].map((value) => value + randomize()),
+          marker: { color: ['#38bdf8', '#a855f7', '#f97316', '#14b8a6'] },
+        },
+      ], {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { color: '#f8fafc' },
+        title: 'Lift by region',
+      })
+
+      Plotly.newPlot('chart-b', [
+        {
+          type: 'scatter',
+          mode: 'lines+markers',
+          name: 'Actual',
+          x: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+          y: [70, 74, 81, 88],
+        },
+        {
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Forecast',
+          x: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+          y: [72, 76, 83, 90],
+          line: { dash: 'dot' },
+        },
+      ], {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { color: '#f8fafc' },
+        title: 'Forecast vs actual',
+      })
+    </script>
+  </body>
+</html>

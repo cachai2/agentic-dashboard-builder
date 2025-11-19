@@ -1,0 +1,17 @@
+:root {
+  --color-background: #050814;
+  --color-panel: #0b1121;
+  --color-panel-elevated: #151b2f;
+  --color-border: #1e293b;
+  --color-accent: #38bdf8;
+  --color-accent-subtle: #7dd3fc;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-error: #fb7185;
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #cbd5f5;
+  --shadow-panel: 0 15px 60px rgba(15, 23, 42, 0.45);
+  --radius-md: 18px;
+  --radius-sm: 10px;
+  --font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}

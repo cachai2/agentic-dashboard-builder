@@ -1,0 +1,9 @@
+transaction_id,store_id,timestamp,customer_segment,payment_method,total_amount,item_skus,item_categories,total_items
+TX1001,S001,2025-03-14T10:05:00Z,Loyal,MobilePay,97.00,"SKU-100;SKU-100","Apparel;Apparel",2
+TX1002,S002,2025-03-14T10:17:00Z,Occasional,CreditCard,184.99,"SKU-210;SKU-330","Home;Electronics",2
+TX1003,S003,2025-03-14T10:26:00Z,Online,GiftCard,105.00,"SKU-120;SKU-120;SKU-120","Apparel;Apparel;Apparel",3
+TX1004,S001,2025-03-14T10:34:00Z,Loyal,CreditCard,338.00,"SKU-450;SKU-510;SKU-510","Electronics;Accessories;Accessories",3
+TX1005,S002,2025-03-14T10:46:00Z,Occasional,DebitCard,139.98,"SKU-610;SKU-330","Kitchen;Electronics",2
+TX1006,S003,2025-03-14T10:59:00Z,Online,DigitalWallet,72.00,"SKU-710;SKU-710;SKU-710;SKU-710","Beauty;Beauty;Beauty;Beauty",4
+TX1007,S001,2025-03-14T11:12:00Z,Loyal,Cash,42.00,"SKU-810;SKU-810;SKU-810;SKU-810;SKU-810;SKU-810;SKU-810;SKU-810;SKU-810;SKU-810;SKU-810;SKU-810","Grocery;Grocery;Grocery;Grocery;Grocery;Grocery;Grocery;Grocery;Grocery;Grocery;Grocery;Grocery",12
+TX1008,S004,2025-03-14T11:25:00Z,Tourist,CreditCard,70.00,"SKU-910;SKU-910;SKU-910;SKU-910;SKU-910","Souvenir;Souvenir;Souvenir;Souvenir;Souvenir",5

@@ -1,0 +1,38 @@
+.viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.iframe {
+  width: 100%;
+  min-height: 320px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.chartCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.6);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chartTitle {
+  font-weight: 600;
+}
+
+.chartDescription {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}

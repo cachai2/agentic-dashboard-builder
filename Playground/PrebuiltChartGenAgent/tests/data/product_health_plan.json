@@ -1,0 +1,81 @@
+{
+  "title": "Product Health Pulse",
+  "sections": [
+    {
+      "id": "feature_adoption",
+      "title": "Feature Adoption by Segment",
+      "chartType": "bar",
+      "encodings": {
+        "x": "segment",
+        "y": "adoption",
+        "color": "feature"
+      },
+      "labels": {
+        "segment": "Customer Segment",
+        "adoption": "Weekly Active %"
+      },
+      "dataset": {
+        "columns": ["segment", "feature", "adoption"],
+        "rows": [
+          ["Enterprise", "Dashboards", 74],
+          ["Enterprise", "Goals", 67],
+          ["Enterprise", "Alerts", 59],
+          ["Mid-Market", "Dashboards", 63],
+          ["Mid-Market", "Goals", 55],
+          ["Mid-Market", "Alerts", 48],
+          ["SMB", "Dashboards", 49],
+          ["SMB", "Goals", 42],
+          ["SMB", "Alerts", 37]
+        ]
+      }
+    },
+    {
+      "id": "latency_trend",
+      "title": "API Latency Trend",
+      "chartType": "line",
+      "encodings": {
+        "x": "week",
+        "y": "p95_ms"
+      },
+      "labels": {
+        "week": "Week",
+        "p95_ms": "p95 Latency (ms)"
+      },
+      "dataset": {
+        "records": [
+          {"week": "W01", "p95_ms": 322},
+          {"week": "W02", "p95_ms": 315},
+          {"week": "W03", "p95_ms": 298},
+          {"week": "W04", "p95_ms": 287},
+          {"week": "W05", "p95_ms": 279},
+          {"week": "W06", "p95_ms": 265}
+        ]
+      }
+    },
+    {
+      "id": "retention_by_segment",
+      "title": "Rolling 90-day Retention",
+      "chartType": "area",
+      "suite": "data_integrity",
+      "encodings": {
+        "x": "cohort",
+        "y": "retention",
+        "color": "segment"
+      },
+      "labels": {
+        "cohort": "Signup Cohort",
+        "retention": "Retention %"
+      },
+      "dataset": {
+        "records": [
+          {"cohort": "2025-Q1", "segment": "Enterprise", "retention": 88},
+          {"cohort": "2025-Q1", "segment": "Mid-Market", "retention": 76},
+          {"cohort": "2025-Q1", "segment": "SMB", "retention": 63},
+          {"cohort": "2025-Q2", "segment": "Enterprise", "retention": 86},
+          {"cohort": "2025-Q2", "segment": "Mid-Market", "retention": 74},
+          {"cohort": "2025-Q2", "segment": "SMB", "retention": 60}
+        ]
+      }
+    }
+  ]
+}

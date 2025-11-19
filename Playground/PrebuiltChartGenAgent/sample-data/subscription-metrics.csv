@@ -1,0 +1,19 @@
+segment,month,active_subscribers,new_signups,churned_subscribers,net_revenue,region
+SMB,2024-01,1520,210,95,184000,North America
+Enterprise,2024-01,840,35,18,312000,North America
+Consumer,2024-01,2980,560,420,126000,Europe
+SMB,2024-02,1585,240,102,191500,North America
+Enterprise,2024-02,855,38,22,319000,North America
+Consumer,2024-02,3050,590,410,129500,Europe
+SMB,2024-03,1640,255,88,198200,North America
+Enterprise,2024-03,872,42,19,327800,North America
+Consumer,2024-03,3125,605,395,133400,Europe
+SMB,2024-04,1698,262,85,204100,North America
+Enterprise,2024-04,884,44,17,333200,North America
+Consumer,2024-04,3198,640,380,138600,Europe
+Mid-Market,2024-03,1240,180,70,221500,Asia Pacific
+Mid-Market,2024-04,1315,195,64,227800,Asia Pacific
+SMB,2024-05,1755,270,79,209600,North America
+Enterprise,2024-05,896,46,16,338500,North America
+Consumer,2024-05,3268,655,372,142900,Europe
+Mid-Market,2024-05,1380,205,60,233200,Asia Pacific

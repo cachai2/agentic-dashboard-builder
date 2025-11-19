@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DashboardPlan",
+  "type": "object",
+  "required": ["title", "sections"],
+  "properties": {
+    "title": {"type": "string"},
+    "description": {"type": "string"},
+    "priority": {"type": "string", "enum": ["overview", "deep-dive", "data-quality"]},
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "charts"],
+        "properties": {
+          "title": {"type": "string"},
+          "description": {"type": "string"},
+          "charts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "type", "query"],
+              "properties": {
+                "id": {"type": "string"},
+                "title": {"type": "string"},
+                "insight": {"type": "string"},
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "line",
+                    "bar",
+                    "stacked_bar",
+                    "area",
+                    "scatter",
+                    "box",
+                    "histogram",
+                    "heatmap",
+                    "table",
+                    "kpi"
+                  ]
+                },
+                "query": {
+                  "type": "object",
+                  "required": ["operation"],
+                  "properties": {
+                    "operation": {
+                      "type": "string",
+                      "enum": [
+                        "groupby_agg",
+                        "timeseries_agg",
+                        "topk",
+                        "distribution",
+                        "correlation_matrix",
+                        "outliers"
+                      ]
+                    },
+                    "x": {"type": "string"},
+                    "y": {"type": "string"},
+                    "group": {"type": "string"},
+                    "filters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "column": {"type": "string"},
+                          "op": {"type": "string", "enum": ["=", "!=", ">", "<", ">=", "<=", "in", "not in"]},
+                          "value": {}
+                        }
+                      }
+                    },
+                    "agg": {"type": "string", "enum": ["sum", "avg", "count", "min", "max", "median"]},
+                    "top_k": {"type": "integer"},
+                    "time_grain": {"type": "string", "enum": ["day", "week", "month", "quarter", "year"]}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

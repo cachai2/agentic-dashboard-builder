@@ -1,0 +1,89 @@
+{
+  "datasets": [
+    {"id": "rev", "path": "tests/data/sample_timeseries.csv", "format": "csv"},
+    {"id": "region_rev", "path": "tests/data/sample_groupby.csv", "format": "csv"},
+    {"id": "mix", "path": "tests/data/sample_composition.csv", "format": "csv"},
+    {"id": "latency", "path": "tests/data/sample_distribution.csv", "format": "csv"},
+    {"id": "errors", "path": "tests/data/sample_anomaly.csv", "format": "csv"}
+  ],
+  "sections": [
+    {
+      "operation": "timeseries",
+      "title": "Revenue vs Target",
+      "dataset": "rev",
+      "x": {"column": "date", "grain": "day"},
+      "series": [
+        {"id": "actual", "column": "revenue", "label": "Revenue"},
+        {"id": "target", "column": "target", "label": "Target", "style": {"dash": "dot"}}
+      ],
+      "forecast": {"lower": "yhat_lower", "upper": "yhat_upper", "label": "Forecast"},
+      "comparison": {"mode": "previous_period", "offset_days": 7},
+      "events": [
+        {"ts": "2024-09-05T00:00:00", "label": "Promo Start"}
+      ],
+      "options": {"y_axis_format": "currency", "rolling_window": 1}
+    },
+    {
+      "operation": "groupby",
+      "title": "Revenue by Region",
+      "dataset": "region_rev",
+      "dimension": "region",
+      "metric": "revenue",
+      "aggregation": "sum",
+      "options": {"orientation": "horizontal", "limit": 5, "show_reference": true}
+    },
+    {
+      "operation": "composition",
+      "title": "Product Mix",
+      "dataset": "mix",
+      "x": {"column": "month", "grain": "month"},
+      "stacks": ["product_a", "product_b", "services"],
+      "options": {"normalize": true, "kind": "stacked_area"}
+    },
+    {
+      "operation": "distribution",
+      "title": "Latency Distribution",
+      "dataset": "latency",
+      "metric": "latency_ms",
+      "options": {"bins": 10, "overlay": "density", "show_boxplot": true}
+    },
+    {
+      "operation": "outliers",
+      "title": "Error Rate Monitoring",
+      "dataset": "errors",
+      "x": {"column": "timestamp", "grain": "day"},
+      "y": "error_rate",
+      "threshold": {"value": 0.04, "direction": "above"},
+      "flag_column": "is_outlier",
+      "events": [
+        {"ts": "2024-09-05T00:00:00", "label": "Deploy"}
+      ]
+    },
+    {
+      "operation": "kpi",
+      "title": "Business KPIs",
+      "layout": "grid",
+      "cards": [
+        {
+          "title": "Net Revenue",
+          "value": 1280000,
+          "unit": "$",
+          "delta": {"value": 0.12, "direction": "up", "label": "vs last month"},
+          "trend": [1.1, 1.2, 1.28, 1.33]
+        },
+        {
+          "title": "NPS",
+          "value": 52,
+          "delta": {"value": 0.0, "direction": "flat", "label": "steady"},
+          "trend": [50, 51, 52, 52]
+        },
+        {
+          "title": "Churn",
+          "value": 0.031,
+          "delta": {"value": 0.004, "direction": "down", "label": "pts"},
+          "trend": [0.038, 0.035, 0.033, 0.031]
+        }
+      ]
+    }
+  ]
+}

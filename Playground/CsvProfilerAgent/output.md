@@ -1,0 +1,555 @@
+# Profiling Output (2025-11-19T19:32:09Z)
+
+- Dataset: `samples/retail_superstore_sample.csv`
+- Command:
+  ```powershell
+  .venv/Scripts/python.exe -c "from app.profiling import profile_csv_path; import json; profile=profile_csv_path('samples/retail_superstore_sample.csv'); print(json.dumps(profile.model_dump(mode='json'), indent=2))"
+  ```
+
+```json
+{
+  "dataset_name": "retail_superstore_sample",
+  "row_count": 10000,
+  "sampled_row_count": 10000,
+  "sampling_ratio": 1.0,
+  "column_count": 18,
+  "generated_at": "2025-11-19T19:32:09.267777Z",
+  "columns": [
+    {
+      "name": "Order ID",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 10000,
+      "example": "CA-2023-00000",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "CA-2023-00000",
+            "count": 1,
+            "percent": 0.01
+          },
+          {
+            "value": "CA-2023-00001",
+            "count": 1,
+            "percent": 0.01
+          },
+          {
+            "value": "CA-2023-00002",
+            "count": 1,
+            "percent": 0.01
+          },
+          {
+            "value": "CA-2023-00003",
+            "count": 1,
+            "percent": 0.01
+          },
+          {
+            "value": "CA-2023-00004",
+            "count": 1,
+            "percent": 0.01
+          }
+        ]
+      }
+    },
+    {
+      "name": "Order Date",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 365,
+      "example": "2023-05-06",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "2023-07-14",
+            "count": 43,
+            "percent": 0.43
+          },
+          {
+            "value": "2023-04-16",
+            "count": 42,
+            "percent": 0.42
+          },
+          {
+            "value": "2023-06-27",
+            "count": 42,
+            "percent": 0.42
+          },
+          {
+            "value": "2023-04-02",
+            "count": 41,
+            "percent": 0.41
+          },
+          {
+            "value": "2023-09-28",
+            "count": 40,
+            "percent": 0.4
+          }
+        ]
+      }
+    },
+    {
+      "name": "Ship Date",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 371,
+      "example": "2023-05-08",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "2023-12-22",
+            "count": 44,
+            "percent": 0.44
+          },
+          {
+            "value": "2023-07-23",
+            "count": 42,
+            "percent": 0.42
+          },
+          {
+            "value": "2023-11-22",
+            "count": 42,
+            "percent": 0.42
+          },
+          {
+            "value": "2023-10-21",
+            "count": 41,
+            "percent": 0.41
+          },
+          {
+            "value": "2023-09-25",
+            "count": 41,
+            "percent": 0.41
+          }
+        ]
+      }
+    },
+    {
+      "name": "Ship Mode",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 4,
+      "example": "Second Class",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "Second Class",
+            "count": 2565,
+            "percent": 25.65
+          },
+          {
+            "value": "Same Day",
+            "count": 2548,
+            "percent": 25.48
+          },
+          {
+            "value": "First Class",
+            "count": 2452,
+            "percent": 24.52
+          },
+          {
+            "value": "Standard Class",
+            "count": 2435,
+            "percent": 24.35
+          }
+        ]
+      }
+    },
+    {
+      "name": "Customer ID",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 6032,
+      "example": "CUST-4811",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "CUST-7108",
+            "count": 7,
+            "percent": 0.07
+          },
+          {
+            "value": "CUST-2633",
+            "count": 7,
+            "percent": 0.07
+          },
+          {
+            "value": "CUST-1214",
+            "count": 7,
+            "percent": 0.07
+          },
+          {
+            "value": "CUST-6506",
+            "count": 6,
+            "percent": 0.06
+          },
+          {
+            "value": "CUST-3543",
+            "count": 6,
+            "percent": 0.06
+          }
+        ]
+      }
+    },
+    {
+      "name": "Segment",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 3,
+      "example": "Consumer",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "Corporate",
+            "count": 3379,
+            "percent": 33.79
+          },
+          {
+            "value": "Home Office",
+            "count": 3324,
+            "percent": 33.24
+          },
+          {
+            "value": "Consumer",
+            "count": 3297,
+            "percent": 32.97
+          }
+        ]
+      }
+    },
+    {
+      "name": "Country",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 3,
+      "example": "Canada",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "United States",
+            "count": 3359,
+            "percent": 33.59
+          },
+          {
+            "value": "Canada",
+            "count": 3358,
+            "percent": 33.58
+          },
+          {
+            "value": "United Kingdom",
+            "count": 3283,
+            "percent": 32.83
+          }
+        ]
+      }
+    },
+    {
+      "name": "City",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1200,
+      "example": "City-52",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "City-997",
+            "count": 19,
+            "percent": 0.19
+          },
+          {
+            "value": "City-860",
+            "count": 18,
+            "percent": 0.18
+          },
+          {
+            "value": "City-696",
+            "count": 17,
+            "percent": 0.17
+          },
+          {
+            "value": "City-663",
+            "count": 17,
+            "percent": 0.17
+          },
+          {
+            "value": "City-792",
+            "count": 17,
+            "percent": 0.17
+          }
+        ]
+      }
+    },
+    {
+      "name": "State",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 10,
+      "example": "Ontario",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "Quebec",
+            "count": 1130,
+            "percent": 11.3
+          },
+          {
+            "value": "Alberta",
+            "count": 1125,
+            "percent": 11.25
+          },
+          {
+            "value": "Scotland",
+            "count": 1114,
+            "percent": 11.14
+          },
+          {
+            "value": "Ontario",
+            "count": 1103,
+            "percent": 11.03
+          },
+          {
+            "value": "England",
+            "count": 1093,
+            "percent": 10.93
+          }
+        ]
+      }
+    },
+    {
+      "name": "Postal Code",
+      "semantic_type": "numeric",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 9473,
+      "example": "46048",
+      "numeric_stats": {
+        "min": 10019.0,
+        "max": 99998.0,
+        "mean": 54736.1931,
+        "stddev": 25880.439153563268,
+        "p05": 14350.85,
+        "p95": 94980.74999999997
+      },
+      "categorical_stats": null
+    },
+    {
+      "name": "Region",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 3,
+      "example": "Canada",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "West",
+            "count": 3359,
+            "percent": 33.59
+          },
+          {
+            "value": "Canada",
+            "count": 3358,
+            "percent": 33.58
+          },
+          {
+            "value": "EMEA",
+            "count": 3283,
+            "percent": 32.83
+          }
+        ]
+      }
+    },
+    {
+      "name": "Category",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 3,
+      "example": "Furniture",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "Technology",
+            "count": 3352,
+            "percent": 33.52
+          },
+          {
+            "value": "Furniture",
+            "count": 3331,
+            "percent": 33.31
+          },
+          {
+            "value": "Office Supplies",
+            "count": 3317,
+            "percent": 33.17
+          }
+        ]
+      }
+    },
+    {
+      "name": "Sub-Category",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 11,
+      "example": "Tables",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "Chairs",
+            "count": 1163,
+            "percent": 11.63
+          },
+          {
+            "value": "Bookcases",
+            "count": 1104,
+            "percent": 11.04
+          },
+          {
+            "value": "Tables",
+            "count": 1064,
+            "percent": 10.64
+          },
+          {
+            "value": "Phones",
+            "count": 883,
+            "percent": 8.83
+          },
+          {
+            "value": "Paper",
+            "count": 883,
+            "percent": 8.83
+          }
+        ]
+      }
+    },
+    {
+      "name": "Product ID",
+      "semantic_type": "categorical",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 9507,
+      "example": "PROD-76237",
+      "numeric_stats": null,
+      "categorical_stats": {
+        "top_values": [
+          {
+            "value": "PROD-80966",
+            "count": 3,
+            "percent": 0.03
+          },
+          {
+            "value": "PROD-78196",
+            "count": 3,
+            "percent": 0.03
+          },
+          {
+            "value": "PROD-53148",
+            "count": 3,
+            "percent": 0.03
+          },
+          {
+            "value": "PROD-52810",
+            "count": 3,
+            "percent": 0.03
+          },
+          {
+            "value": "PROD-15769",
+            "count": 3,
+            "percent": 0.03
+          }
+        ]
+      }
+    },
+    {
+      "name": "Sales",
+      "semantic_type": "numeric",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 9762,
+      "example": "2138.5",
+      "numeric_stats": {
+        "min": 4.77,
+        "max": 4991.0,
+        "mean": 1251.317595,
+        "stddev": 1042.7606951954847,
+        "p05": 89.844,
+        "p95": 3387.511999999999
+      },
+      "categorical_stats": null
+    },
+    {
+      "name": "Quantity",
+      "semantic_type": "numeric",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 10,
+      "example": "10",
+      "numeric_stats": {
+        "min": 1.0,
+        "max": 10.0,
+        "mean": 5.4718,
+        "stddev": 2.8696390439956527,
+        "p05": 1.0,
+        "p95": 10.0
+      },
+      "categorical_stats": null
+    },
+    {
+      "name": "Discount",
+      "semantic_type": "numeric",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 4,
+      "example": "0.0",
+      "numeric_stats": {
+        "min": 0.0,
+        "max": 0.3,
+        "mean": 0.10098,
+        "stddev": 0.11535324112058447,
+        "p05": 0.0,
+        "p95": 0.3
+      },
+      "categorical_stats": null
+    },
+    {
+      "name": "Profit",
+      "semantic_type": "numeric",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 9082,
+      "example": "-123.68",
+      "numeric_stats": {
+        "min": -437.06,
+        "max": 1680.91,
+        "mean": 157.18532799999997,
+        "stddev": 251.6377608469381,
+        "p05": -96.50299999999999,
+        "p95": 699.4454999999995
+      },
+      "categorical_stats": null
+    }
+  ],
+  "llm_annotations": null
+}
+```
