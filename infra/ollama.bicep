@@ -24,7 +24,7 @@ resource ollamaApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
   }
   properties: {
     environmentId: containerAppsEnvironmentId
-    workloadProfileName: 'GPU'
+    workloadProfileName: 'GPU-A100'
     configuration: {
       ingress: {
         external: true

@@ -49,6 +49,10 @@ var containerAppsEnvironmentBaseProperties = {
     }
     {
       name: 'GPU'
+      workloadProfileType: 'Consumption-GPU-NC8as-T4'
+    }
+    {
+      name: 'GPU-A100'
       workloadProfileType: 'Consumption-GPU-NC24-A100'
     }
   ]
