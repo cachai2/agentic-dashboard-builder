@@ -72,8 +72,8 @@ resource ollamaApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
             }
           ]
           resources: {
-            cpu: 24
-            memory: '220Gi'
+            cpu: 22
+            memory: '216Gi'
           }
           volumeMounts: enableStorageMount ? [
             {

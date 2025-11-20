@@ -1,0 +1,90 @@
+# Agent Orchestrator (Microsoft Agent Framework)
+
+> Goal: provide a single Agent Framework entry point that can call each playground agent (CSV profiler, planner, renderer, frontend bridge, etc.) and stitch their outputs into a coherent Upload → Dashboard flow.
+
+## Scope
+
+- **Workspace:** `Playground/AgentOrchestrator` hosts all Agent Framework code, prompts, and workflow manifests.
+- **Runtime:** Python + Microsoft Agent Framework (public preview). Always install with `pip install --pre agent-framework-azure-ai` in this folder's virtualenv.
+- **Outcome:** an orchestrator agent/workflow that accepts a dataset reference, profiles it, calls the remote Ollama planner, renders charts (custom or prebuilt), and returns dashboard artifacts / API responses for the frontend.
+
+## Existing building blocks
+
+| Capability | Folder | Surface we will wrap |
+| --- | --- | --- |
+| Dataset profiling + schema JSON | `Playground/CsvProfilerAgent` | FastAPI `/profile`, CLI scripts, and future Agent Framework tool `profile_csv`. |
+| Structured JSON planner (Ollama remote) | `Playground/OllamaStructuredJson` | FastAPI `/plan`, direct Ollama `/api/chat`, schema validator. |
+| Plotly HTML rendering | `Playground/ChartRenderingAgent` | CLI tools (`compose_tool`, `render_chart_tool`) to turn a `DashboardPlan` into HTML. |
+| Prebuilt chart adapters | `Playground/PrebuiltChartGenAgent` | Agent Framework tools under `agent_tools/chart_generation_tools.py`. |
+| Frontend mock/real APIs | `Playground/FrontendAgent` | REST contract we eventually expose from this orchestrator. |
+
+## Planned architecture
+
+1. **Agent graph**
+   - `ProfilerAgent` → wraps CSV profiler tool.
+   - `PlannerAgent` → calls remote Ollama ACA endpoint using the structured JSON schema.
+   - `RendererAgent` → picks either custom Plotly renderer or prebuilt adapter based on plan metadata.
+   - `FrontendProxyAgent` (optional) → stages results for the React frontend (uploads HTML, returns URLs/status).
+   - `Coordinator` workflow → orchestrates the above with deterministic steps and retries.
+2. **Tooling contracts**
+   - Standardize request/response Pydantic models so each tool integrates with Microsoft Agent Framework `ai_function` decorators.
+   - Reuse existing CLI/HTTP surfaces where possible, otherwise expose helper modules for in-process calls.
+3. **State + storage**
+   - Thread/local state keeps `session_id`, artifact paths, and telemetry IDs.
+   - Use the repo-level `samples/` data during development; wire Blob/Samba volume later when ACA integration lands.
+
+## Implementation roadmap
+
+1. **Bootstrap**
+   - Create `.venv` inside this folder, install Agent Framework (`pip install --pre agent-framework-azure-ai`) plus shared deps from other agents.
+   - Add `pyproject.toml` or `requirements.txt` referencing local packages/modules.
+2. **Define contracts**
+   - Mirror `schemas/dashboard_plan.schema.json` for typed Pydantic models.
+   - Author request/response models for `ProfileRequest`, `PlanRequest`, `RenderRequest`, etc.
+3. **Wrap tools**
+   - Import the profiler/renderer modules directly so the orchestrator can call them synchronously.
+   - For remote Ollama, create an `OllamaPlannerTool` that hits `https://ollama-ignite-demo-...azurecontainerapps.io:11434/api/chat`.
+4. **Build workflow**
+   - Start with sequential execution: profile → plan → render → return artifact path.
+   - Add retries (planner JSON validation) and validation steps (schema enforcement) inline.
+5. **Expose API + CLI**
+   - Provide `python -m agent_orchestrator.api` FastAPI app with `/upload`, `/dashboard/status`, `/dashboard/view` that forwards into the workflow.
+   - Add CLI for smoke testing (`python -m agent_orchestrator.cli --csv samples/retail_superstore_sample.csv`).
+6. **Observability**
+   - Emit Agent Framework traces; optionally forward to Application Insights once instrumentation key is available.
+
+## Getting started
+
+1. **Create an isolated environment**
+
+   ```powershell
+   cd Playground/AgentOrchestrator
+   python -m venv .venv
+   .venv\Scripts\activate
+   pip install -e . --pre
+   ```
+
+   > The `--pre` flag is required because `agent-framework-azure-ai` is currently a preview release.
+
+2. **Run the upload → plan workflow locally**
+
+   ```powershell
+   python -m agent_orchestrator.cli ..\CsvProfilerAgent\samples\retail_superstore_sample.csv --output-dir .\artifacts
+   ```
+
+   This will profile the sample CSV using the local profiler module, call the remote Ollama planner, and emit `artifacts/profile.json` and `artifacts/plan.json`.
+
+3. **Wire the orchestrator into the frontend** – once the CLI path is stable we can wrap the workflow with FastAPI endpoints that mimic the CPU orchestrator contracts (`/upload`, `/dashboard/status`, `/dashboard/view`).
+
+## Next actions
+
+- [ ] Integrate the Chart Rendering + Prebuilt adapters so the orchestrator returns actual HTML dashboard artifacts.
+- [ ] Register the profiling/planning/rendering tools with a `PersistentAgentsClient` instance and expose a workflow graph once we firm up the orchestration order.
+- [ ] Add Application Insights telemetry hooks for end-to-end tracing.
+- [ ] Backfill documentation here as components mature (diagram, sequence chart, troubleshooting tips).
+
+## References
+
+- Microsoft Agent Framework overview: <https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview>
+- Repo architecture doc: `README.md` (root) + `More Specific Architecture.md`.
+- Dashboard schema: `schemas/dashboard_plan.schema.json`.

@@ -1,0 +1,18 @@
+[project]
+name = "agent-orchestrator"
+version = "0.1.0"
+description = "Microsoft Agent Framework orchestrator that chains the Ignite playground agents."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "agent-framework-azure-ai>=0.1.0a0",
+    "httpx>=0.27",
+    "orjson>=3.9",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.5",
+    "jsonschema>=4.19"
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
