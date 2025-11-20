@@ -21,7 +21,7 @@ param proxyAuthPassword string
 param enableDebugging bool = false
 
 @description('Enable VNet integration for the Container Apps Environment')
-param enableVnetIntegration bool = true
+param enableVnetIntegration bool = false
 
 @description('Enable persistent volume mount for the Ollama GPU service')
 param enableOllamaModelVolume bool = true
@@ -31,6 +31,7 @@ var sanitized = toLower(replace(replace(environmentName, '-', ''), '_', ''))
 var sanitizedBase = empty(sanitized) ? 'env' : sanitized
 var containerRegistryName = take('acr${sanitizedBase}${resourceToken}00', 50)
 var storageAccountName = take('st${sanitizedBase}${resourceToken}000', 24)
+var storageAccountSmbName = take('st${sanitizedBase}${resourceToken}100', 24)
 var identityName = 'id-${baseName}'
 var containerAppsEnvironmentName = 'cae-${baseName}'
 var ollamaAppName = 'ollama-${baseName}'
@@ -48,7 +49,7 @@ var containerAppsEnvironmentBaseProperties = {
     }
     {
       name: 'GPU'
-      workloadProfileType: 'Consumption-GPU-NC8as-T4'
+      workloadProfileType: 'Consumption-GPU-NC24-A100'
     }
   ]
 }
@@ -189,8 +190,28 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   }
 }
 
+resource storageAccountSmb 'Microsoft.Storage/storageAccounts@2023-01-01' = {
+  name: storageAccountSmbName
+  location: location
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'StorageV2'
+  properties: {
+    publicNetworkAccess: 'Enabled'
+    supportsHttpsTrafficOnly: false
+    allowSharedKeyAccess: true
+    allowBlobPublicAccess: false
+  }
+}
+
 resource fileService 'Microsoft.Storage/storageAccounts/fileServices@2023-01-01' = {
   parent: storageAccount
+  name: 'default'
+}
+
+resource fileServiceSmb 'Microsoft.Storage/storageAccounts/fileServices@2023-01-01' = {
+  parent: storageAccountSmb
   name: 'default'
 }
 
@@ -236,7 +257,7 @@ resource ollamaModelShare 'Microsoft.Storage/storageAccounts/fileServices/shares
 }
 
 resource ollamaModelSmbShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-01-01' = {
-  parent: fileService
+  parent: fileServiceSmb
   name: 'ollama-model-smb'
   properties: {
     enabledProtocols: 'SMB'
@@ -325,7 +346,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
 }
 
 
-resource agentLocalStorage 'Microsoft.App/managedEnvironments/storages@2025-02-02-preview' = {
+resource agentLocalStorage 'Microsoft.App/managedEnvironments/storages@2025-02-02-preview' = if (enableVnetIntegration) {
   parent: containerAppsEnvironment
   name: 'agent-local-storage'
   properties: {
@@ -337,7 +358,7 @@ resource agentLocalStorage 'Microsoft.App/managedEnvironments/storages@2025-02-0
   }
 }
 
-resource agentConfigStorage 'Microsoft.App/managedEnvironments/storages@2025-02-02-preview' = {
+resource agentConfigStorage 'Microsoft.App/managedEnvironments/storages@2025-02-02-preview' = if (enableVnetIntegration) {
   parent: containerAppsEnvironment
   name: 'agent-config-storage'
   properties: {
@@ -349,7 +370,7 @@ resource agentConfigStorage 'Microsoft.App/managedEnvironments/storages@2025-02-
   }
 }
 
-resource agentWorkspaceStorage 'Microsoft.App/managedEnvironments/storages@2025-02-02-preview' = {
+resource agentWorkspaceStorage 'Microsoft.App/managedEnvironments/storages@2025-02-02-preview' = if (enableVnetIntegration) {
   parent: containerAppsEnvironment
   name: 'agent-workspace-storage'
   properties: {
@@ -361,7 +382,7 @@ resource agentWorkspaceStorage 'Microsoft.App/managedEnvironments/storages@2025-
   }
 }
 
-resource ollamaModelStorage 'Microsoft.App/managedEnvironments/storages@2025-02-02-preview' = {
+resource ollamaModelStorage 'Microsoft.App/managedEnvironments/storages@2025-02-02-preview' = if (enableVnetIntegration) {
   parent: containerAppsEnvironment
   name: 'ollama-model-storage'
   properties: {
@@ -375,11 +396,11 @@ resource ollamaModelStorage 'Microsoft.App/managedEnvironments/storages@2025-02-
 
 resource ollamaModelSmbStorage 'Microsoft.App/managedEnvironments/storages@2025-02-02-preview' = {
   parent: containerAppsEnvironment
-  name: 'ollama-model-storage-smb'
+  name: 'ollama-model-storage-smb-public'
   properties: {
     azureFile: {
-      accountName: storageAccount.name
-      accountKey: listKeys(storageAccount.id, '2022-09-01').keys[0].value
+      accountName: storageAccountSmb.name
+      accountKey: listKeys(storageAccountSmb.id, '2022-09-01').keys[0].value
       shareName: ollamaModelSmbShare.name
       accessMode: 'ReadWrite'
     }
@@ -606,5 +627,5 @@ output LOCATION string = location
 output USER_ASSIGNED_IDENTITY object = userAssignedIdentity
 output CONTAINER_REGISTRY object = containerRegistry
 output CONTAINER_APPS_ENVIRONMENT object = containerAppsEnvironment
-output OLLAMA_MODEL_STORAGE object = ollamaModelStorage
+output OLLAMA_MODEL_STORAGE object = enableVnetIntegration ? ollamaModelStorage : {}
 output SEED_IMAGES object = seedImages

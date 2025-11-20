@@ -6,11 +6,6 @@ set -e
 # Default model if none specified
 DEFAULT_MODEL="qwen2.5:14b"
 
-# Ensure the Ollama daemon listens on all interfaces using the standard port
-LISTEN_ADDR="${OLLAMA_HOST:-0.0.0.0:11434}"
-export OLLAMA_HOST="$LISTEN_ADDR"
-echo "Ollama will listen on ${OLLAMA_HOST}"
-
 # Function to start ollama and pull model (keeps running)
 start_with_model() {
     local model="${1:-$DEFAULT_MODEL}"

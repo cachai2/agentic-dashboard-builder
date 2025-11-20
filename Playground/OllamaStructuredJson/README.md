@@ -57,10 +57,10 @@ Even though this agent ultimately targets a GPU-backed ACA container, you can st
    pytest
    ```
 
-2. Start the planner service in mock mode on port `8801` so the CPU agent can call it without a GPU:
+2. Start the planner service in mock mode on port `11434` so the CPU agent can call it without a GPU:
 
    ```powershell
-   OLLAMA_MODE=mock uvicorn app.service:app --port 8801 --reload
+   OLLAMA_MODE=mock uvicorn app.service:app --port 11434 --reload
    ```
 
 3. To hit a real GPU-hosted Ollama instance (e.g., the ACA deployment), point the client at the remote host while keeping the local validator code:

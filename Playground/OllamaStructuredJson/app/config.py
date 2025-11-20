@@ -54,7 +54,7 @@ class Settings(BaseSettings):
         validation_alias="PROMPT_DIR",
     )
     service_port: int = Field(
-        default=8801,
+        default=11434,
         validation_alias="PORT",
         description="Port uvicorn should bind to when launched locally.",
     )

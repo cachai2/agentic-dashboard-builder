@@ -27,8 +27,8 @@ resource ollamaApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
     workloadProfileName: 'GPU'
     configuration: {
       ingress: {
-        external: false
-        targetPort: 8801
+        external: true
+        targetPort: 11434
         allowInsecure: true
       }
       registries: [
@@ -70,14 +70,10 @@ resource ollamaApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
               name: 'OLLAMA_KEEP_ALIVE'
               value: '15m'
             }
-            {
-              name: 'PORT'
-              value: '8801'
-            }
           ]
           resources: {
-            cpu: 8
-            memory: '56Gi'
+            cpu: 24
+            memory: '220Gi'
           }
           volumeMounts: enableStorageMount ? [
             {
