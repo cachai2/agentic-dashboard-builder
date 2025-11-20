@@ -31,7 +31,7 @@ class Settings(BaseSettings):
         description="Endpoint path appended to the Ollama host; use empty string when specifying a fully-qualified URL.",
     )
     ollama_model: str = Field(
-        default="llama3.1-8b",
+        default="llama3.1:8b",
         validation_alias="OLLAMA_MODEL",
         description="Model identifier passed to the Ollama API.",
     )

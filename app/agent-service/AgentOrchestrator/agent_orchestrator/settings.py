@@ -46,7 +46,7 @@ class OrchestratorSettings(BaseSettings):
         default="https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io",
         description="Base URL for the actual Ollama deployment that serves /api/chat.",
     )
-    ollama_model: str = Field(default="llama3.1-8b", description="Model name passed to Ollama.")
+    ollama_model: str = Field(default="llama3.1:8b", description="Model name passed to Ollama.")
     prompt_version: str = Field(default="v1", description="Prompt template identifier.")
     ollama_timeout_seconds: float = Field(default=90.0, ge=5.0, description="HTTP timeout for Ollama calls.")
     plan_schema_path: Path = Field(

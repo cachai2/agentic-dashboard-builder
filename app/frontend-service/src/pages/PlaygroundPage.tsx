@@ -51,12 +51,16 @@ export const PlaygroundPage = () => {
           </Panel>
         </div>
 
-        <div className={clsx(styles.column, styles.outputColumn)}>
-          <Panel title={copy.status.title} helper={copy.status.helper}>
+        <div className={clsx(styles.column, styles.statusColumn)}>
+          <Panel className={styles.statusPanel} title={copy.status.title} helper={copy.status.helper}>
             {error ? <ErrorBanner message={error} /> : null}
-            <StatusTimeline entries={statusEntries} emptyLabel={copy.status.empty} />
+            <div className={styles.statusBody}>
+              <StatusTimeline entries={statusEntries} emptyLabel={copy.status.empty} />
+            </div>
           </Panel>
+        </div>
 
+        <div className={clsx(styles.column, styles.dashboardRow)}>
           <Panel title={copy.dashboard.title} helper={copy.dashboard.helper}>
             <MetricsGrid metrics={dashboard?.metrics ?? []} />
             <DashboardViewer

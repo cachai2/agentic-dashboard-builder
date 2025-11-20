@@ -5,7 +5,7 @@ import logging
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable
+from typing import Any, Dict
 
 from ..api.models import (
     AgentStatusEntry,
@@ -17,11 +17,13 @@ from ..api.models import (
     UploadSession,
 )
 from ..workflows import UploadToDashboardWorkflow, WorkflowResult
+from .dashboard_renderer import DashboardRenderer, RenderedDashboard
 from .models import (
     AgentStepSnapshot,
     ChartConfigPayload,
     DashboardArtifacts,
     MetricSummaryPayload,
+    SessionRecord,
     UploadMetadataPayload,
 )
 from .persistence import PersistenceManager
@@ -50,6 +52,7 @@ class SessionCoordinator:
         self._workflow = UploadToDashboardWorkflow()
         self._background_tasks: set[asyncio.Task[None]] = set()
         self._persistence = persistence or PersistenceManager()
+        self._dashboard_renderer = DashboardRenderer()
 
     async def handle_upload(self, *, filename: str, payload: bytes, metadata: UploadMetadata) -> UploadSession:
         sanitized_filename = filename or "dataset.csv"
@@ -136,10 +139,10 @@ class SessionCoordinator:
             await self._record_step_state(session_id, step_id="profile", tool_name="Profiler", state="success")
             if result.plan:
                 await self._record_step_state(session_id, step_id="planner", tool_name="Planner", state="running")
-                await self._persist_outputs(session_id, result)
+                await self._persist_outputs(record, result)
                 await self._record_step_state(session_id, step_id="planner", tool_name="Planner", state="success")
             else:
-                await self._persist_outputs(session_id, result)
+                await self._persist_outputs(record, result)
         except Exception:  # pragma: no cover - guardrail for background task
             logger.exception("Workflow execution failed for session %s", session_id)
             await self._record_step_state(session_id, step_id="planner", tool_name="Planner", state="error")
@@ -182,7 +185,8 @@ class SessionCoordinator:
             metadata=dict(snapshot.metadata),
         )
 
-    async def _persist_outputs(self, session_id: str, result: WorkflowResult) -> None:
+    async def _persist_outputs(self, record: SessionRecord, result: WorkflowResult) -> None:
+        session_id = record.session_id
         payload: Dict[str, Any] = {
             "profile": result.profile,
         }
@@ -196,23 +200,32 @@ class SessionCoordinator:
             results_url=results_url,
         )
 
-        dashboard_artifacts = self._build_dashboard_artifacts(result.plan)
+        render_result: RenderedDashboard | None = None
+        if record.dataset_local_path:
+            try:
+                render_result = await asyncio.to_thread(
+                    self._dashboard_renderer.render,
+                    record.dataset_local_path,
+                    result.plan,
+                )
+            except Exception:
+                logger.exception("Dashboard renderer failed for session %s", session_id)
+
+        dashboard_html = ""
+        if render_result:
+            dashboard_html = render_result.html
+        elif result.plan:
+            dashboard_html = self._render_basic_dashboard(result.plan)
+
+        dashboard_artifacts = self._build_dashboard_artifacts(result.plan, render_result)
         dashboard_blob: str | None = None
         dashboard_url: str | None = None
-        if dashboard_artifacts and dashboard_artifacts.iframe_url:
-            # Already populated with SAS URL
-            dashboard_url = dashboard_artifacts.iframe_url
-        elif result.plan:
-            html = self._render_basic_dashboard(result.plan)
-            dashboard_blob, dashboard_url = await self._persistence.persist_dashboard_html(session_id, html)
-            dashboard_artifacts = dashboard_artifacts or DashboardArtifacts(
-                iframe_url=dashboard_url,
-                metrics=[],
-                charts=[],
-            )
-            dashboard_artifacts.iframe_url = dashboard_url
-        else:
+        if dashboard_html:
+            dashboard_blob, dashboard_url = await self._persistence.persist_dashboard_html(session_id, dashboard_html)
+        if dashboard_artifacts is None:
             dashboard_artifacts = DashboardArtifacts(iframe_url="", metrics=[], charts=[])
+        if dashboard_url:
+            dashboard_artifacts.iframe_url = dashboard_url
 
         await self._store.save_dashboard(
             session_id,
@@ -221,7 +234,35 @@ class SessionCoordinator:
             dashboard_url=dashboard_url,
         )
 
-    def _build_dashboard_artifacts(self, plan_payload: Dict[str, Any] | None) -> DashboardArtifacts | None:
+    def _build_dashboard_artifacts(
+        self,
+        plan_payload: Dict[str, Any] | None,
+        render_result: RenderedDashboard | None,
+    ) -> DashboardArtifacts | None:
+        if render_result:
+            charts = [
+                ChartConfigPayload(
+                    id=section.chart_id,
+                    title=section.title,
+                    description=section.description,
+                    iframe_url=None,
+                    plotly_spec=section.metadata,
+                )
+                for section in render_result.sections
+            ]
+            metrics = [
+                MetricSummaryPayload(label="Renderer", value=render_result.source),
+                MetricSummaryPayload(label="Charts Rendered", value=str(len(charts))),
+            ]
+            if render_result.skipped:
+                metrics.append(
+                    MetricSummaryPayload(
+                        label="Skipped Charts",
+                        value=str(len(render_result.skipped)),
+                    )
+                )
+            return DashboardArtifacts(iframe_url="", metrics=metrics, charts=charts)
+
         if not plan_payload:
             return None
         charts_payload = self._extract_charts(plan_payload)

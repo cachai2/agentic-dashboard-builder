@@ -1,141 +1,155 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "DatasetProfile",
+  "title": "DashboardPlan",
   "type": "object",
   "required": [
-    "dataset_name",
-    "row_count",
-    "sampled_row_count",
-    "column_count",
-    "generated_at",
-    "columns"
+    "title",
+    "description",
+    "sections"
   ],
   "properties": {
-    "dataset_name": {
+    "title": {
       "type": "string",
       "minLength": 1
     },
-    "row_count": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "sampled_row_count": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "sampling_ratio": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 1
-    },
-    "column_count": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "generated_at": {
+    "description": {
       "type": "string",
-      "format": "date-time"
+      "minLength": 1
     },
-    "columns": {
+    "summary": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "datasets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "format": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "query": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "sections": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "required": [
-          "name",
-          "semantic_type",
-          "null_count",
-          "null_pct",
-          "distinct_count",
-          "example"
+          "title",
+          "charts"
         ],
         "properties": {
-          "name": {
+          "id": {
             "type": "string",
             "minLength": 1
           },
-          "semantic_type": {
+          "title": {
             "type": "string",
-            "enum": [
-              "numeric",
-              "categorical",
-              "datetime",
-              "boolean"
-            ]
+            "minLength": 1
           },
-          "null_count": {
-            "type": "integer",
-            "minimum": 0
+          "description": {
+            "type": "string"
           },
-          "null_pct": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
+          "layout": {
+            "type": "string"
           },
-          "distinct_count": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "example": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "numeric_stats": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "required": [
-              "min",
-              "max",
-              "mean",
-              "stddev",
-              "p05",
-              "p95"
-            ],
-            "properties": {
-              "min": {"type": ["number", "null"]},
-              "max": {"type": ["number", "null"]},
-              "mean": {"type": ["number", "null"]},
-              "stddev": {"type": ["number", "null"]},
-              "p05": {"type": ["number", "null"]},
-              "p95": {"type": ["number", "null"]}
+          "filters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {"type": "string"},
+                "operator": {"type": "string"},
+                "value": {}
+              },
+              "additionalProperties": true
             }
           },
-          "categorical_stats": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "required": [
-              "top_values"
-            ],
-            "properties": {
-              "top_values": {
-                "type": "array",
-                "items": {
+          "charts": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "type",
+                "query"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "title": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "insight": {
+                  "type": "string"
+                },
+                "dataset": {
+                  "type": "string"
+                },
+                "query": {
                   "type": "object",
-                  "required": [
-                    "value",
-                    "count",
-                    "percent"
-                  ],
-                  "properties": {
-                    "value": {"type": ["string", "null"]},
-                    "count": {"type": "integer", "minimum": 0},
-                    "percent": {"type": "number", "minimum": 0, "maximum": 100}
+                  "minProperties": 1,
+                  "additionalProperties": true
+                },
+                "options": {
+                  "type": "object"
+                },
+                "annotations": {
+                  "type": "object"
+                },
+                "metrics": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "dimensions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
                   }
                 }
-              }
+              },
+              "additionalProperties": true
             }
           }
-        }
+        },
+        "additionalProperties": true
       }
-    },
-    "llm_annotations": {
-      "type": ["object", "null"]
     }
-  }
+  },
+  "additionalProperties": true
 }
