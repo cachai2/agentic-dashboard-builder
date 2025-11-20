@@ -61,14 +61,20 @@ export const PlaygroundPage = () => {
         </div>
 
         <div className={clsx(styles.column, styles.dashboardRow)}>
-          <Panel title={copy.dashboard.title} helper={copy.dashboard.helper}>
-            <MetricsGrid metrics={dashboard?.metrics ?? []} />
-            <DashboardViewer
-              iframeUrl={dashboard?.iframeUrl}
-              charts={dashboard?.charts ?? []}
-              isGenerating={isGeneratingDashboard}
-              placeholder={copy.dashboard.placeholder}
-            />
+          <Panel
+            className={styles.dashboardPanel}
+            title={copy.dashboard.title}
+            helper={copy.dashboard.helper}
+          >
+            <div className={styles.dashboardBody}>
+              <MetricsGrid metrics={dashboard?.metrics ?? []} />
+              <DashboardViewer
+                iframeUrl={dashboard?.iframeUrl}
+                charts={dashboard?.charts ?? []}
+                isGenerating={isGeneratingDashboard}
+                placeholder={copy.dashboard.placeholder}
+              />
+            </div>
           </Panel>
         </div>
       </div>

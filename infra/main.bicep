@@ -13,6 +13,9 @@ param proxyAuthPassword string
 @description('Toggle diagnostic logging through a Log Analytics workspace')
 param enableDebugging bool = false
 
+@description('Base URL for the OllamaStructuredJson gateway that the orchestrator should call (no /json suffix).')
+param plannerGatewayHost string = 'http://127.0.0.1:11434'
+
 // Variables
 var resourceToken = take(toLower(uniqueString(subscription().id, environmentName, location)), 5)
 
@@ -26,6 +29,7 @@ module resources 'resources.bicep' = {
     resourceToken: resourceToken
     proxyAuthPassword: proxyAuthPassword
     enableDebugging: enableDebugging
+    plannerGatewayHost: plannerGatewayHost
   }
 }
 

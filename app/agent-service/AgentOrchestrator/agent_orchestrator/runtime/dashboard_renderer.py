@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import csv
 import logging
 import tempfile
+import uuid
 from dataclasses import dataclass, field
 from importlib import import_module
 from pathlib import Path
@@ -90,19 +92,22 @@ class _ChartRenderingAdapter:
             return None
 
         builder = _ChartRenderingPlanBuilder(dataset_path, dataset_id=self._dataset_id)
-        compiled = builder.build(plan_payload)
-        if compiled is None:
-            if builder.skipped:
-                logger.info("ChartRendering skipped charts: %s", "; ".join(builder.skipped))
-            return None
-
-        assert self._plan_model is not None  # for mypy
-        dashboard_plan = self._plan_model.model_validate(compiled.payload)
         try:
-            artifact = self._composer.render_plan(str(dataset_path), dashboard_plan)  # type: ignore[call-arg]
-        except Exception:
-            logger.exception("ChartRendering agent failed to render plan")
-            return None
+            compiled = builder.build(plan_payload)
+            if compiled is None:
+                if builder.skipped:
+                    logger.info("ChartRendering skipped charts: %s", "; ".join(builder.skipped))
+                return None
+
+            assert self._plan_model is not None  # for mypy
+            dashboard_plan = self._plan_model.model_validate(compiled.payload)
+            try:
+                artifact = self._composer.render_plan(str(dataset_path), dashboard_plan)  # type: ignore[call-arg]
+            except Exception:
+                logger.exception("ChartRendering agent failed to render plan")
+                return None
+        finally:
+            builder.cleanup()
 
         sections_metadata = artifact.metadata.get("sections", []) if isinstance(artifact.metadata, Mapping) else []
         rendered_sections: List[RenderedSection] = []
@@ -155,11 +160,14 @@ class _ChartRenderingPlanBuilder:
     def __init__(self, dataset_path: Path, *, dataset_id: str) -> None:
         dataset_file = Path(dataset_path).resolve()
         self._dataset_id = dataset_id
+        self._source_dataset = dataset_file
         self._dataset_entry = {"id": dataset_id, "path": str(dataset_file), "format": "csv"}
+        self._datasets: List[Dict[str, Any]] = [self._dataset_entry]
         self._sections: List[Dict[str, Any]] = []
         self._bindings: List[SectionBinding] = []
         self._skipped: List[str] = []
         self._chart_counter = 0
+        self._inline_artifacts: List[Path] = []
 
     @property
     def skipped(self) -> List[str]:
@@ -191,7 +199,7 @@ class _ChartRenderingPlanBuilder:
         if not self._sections:
             return None
 
-        payload = {"datasets": [self._dataset_entry], "sections": self._sections}
+        payload = {"datasets": self._datasets, "sections": self._sections}
         return CompiledPlan(payload=payload, bindings=list(self._bindings), skipped=self.skipped)
 
     def _extract_plan(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -221,6 +229,9 @@ class _ChartRenderingPlanBuilder:
             "topk": self._build_groupby_section,
             "distribution": self._build_distribution_section,
             "outliers": self._build_outliers_section,
+            "kpi": self._build_kpi_section,
+            "scatter": self._build_scatter_section,
+            "funnel": self._build_funnel_section,
         }
         builder = mapping.get(operation)
         if not builder:
@@ -321,6 +332,178 @@ class _ChartRenderingPlanBuilder:
             "x": {"column": x_col, "grain": query.get("time_grain")},
             "y": y_col,
         }
+
+    def _build_kpi_section(
+        self,
+        section: Mapping[str, Any],
+        chart: Mapping[str, Any],
+        query: Mapping[str, Any],
+    ) -> Dict[str, Any]:
+        cards_input = chart.get("cards") or query.get("cards")
+        if not isinstance(cards_input, list):
+            raise PlanConversionError("kpi charts require a list of cards")
+
+        cards: List[Dict[str, Any]] = []
+        for item in cards_input:
+            if not isinstance(item, Mapping):
+                continue
+            title = str(item.get("title") or chart.get("title") or "KPI")
+            value = item.get("value")
+            try:
+                numeric_value = float(value)
+            except (TypeError, ValueError):
+                continue
+            card_payload = {
+                "title": title,
+                "value": numeric_value,
+            }
+            if item.get("unit"):
+                card_payload["unit"] = item["unit"]
+            if item.get("delta") is not None:
+                card_payload["delta"] = item.get("delta")
+            if item.get("trend"):
+                card_payload["trend"] = item.get("trend")
+            if item.get("trend_label"):
+                card_payload["trend_label"] = item.get("trend_label")
+            cards.append(card_payload)
+
+        if not cards:
+            raise PlanConversionError("kpi cards missing numeric values")
+
+        layout = chart.get("layout") or query.get("layout") or "grid"
+        return {
+            "operation": "kpi",
+            "title": chart.get("title") or section.get("title") or "Customer Snapshot",
+            "layout": layout,
+            "cards": cards,
+        }
+
+    def _build_scatter_section(
+        self,
+        section: Mapping[str, Any],
+        chart: Mapping[str, Any],
+        query: Mapping[str, Any],
+    ) -> Dict[str, Any]:
+        x_col = query.get("x")
+        y_col = query.get("y")
+        if not (isinstance(x_col, str) and isinstance(y_col, str)):
+            raise PlanConversionError("scatter charts require 'x' and 'y' columns")
+
+        dataset_id = query.get("dataset") or self._dataset_id
+        options = query.get("options") if isinstance(query.get("options"), Mapping) else {}
+        tooltip_fields = query.get("tooltip_fields")
+        if isinstance(tooltip_fields, list):
+            tooltip_fields = [str(field) for field in tooltip_fields if isinstance(field, str)]
+        else:
+            tooltip_fields = None
+
+        opacity_value = options.get("opacity", 0.85)
+        try:
+            opacity_value = float(opacity_value)
+        except (TypeError, ValueError):
+            opacity_value = 0.85
+
+        return {
+            "operation": "scatter",
+            "title": chart.get("title") or section.get("title") or "Scatter",
+            "dataset": dataset_id,
+            "x": x_col,
+            "y": y_col,
+            "size": query.get("size") if isinstance(query.get("size"), str) else None,
+            "color": query.get("color") if isinstance(query.get("color"), str) else None,
+            "text": query.get("text") if isinstance(query.get("text"), str) else None,
+            "tooltip_fields": tooltip_fields,
+            "options": {
+                "trendline": bool(options.get("trendline", query.get("trendline", True))),
+                "opacity": opacity_value,
+            },
+        }
+
+    def _build_funnel_section(
+        self,
+        section: Mapping[str, Any],
+        chart: Mapping[str, Any],
+        query: Mapping[str, Any],
+    ) -> Dict[str, Any]:
+        stage_column = self._coerce_string(query.get("stage_column"), "stage")
+        value_column = self._coerce_string(query.get("value_column"), "count")
+        comparison_column = self._coerce_string(query.get("comparison_column"), "prev_count", optional=True)
+        data_rows = query.get("data")
+        if not isinstance(data_rows, list) or not data_rows:
+            raise PlanConversionError("funnel charts require inline 'data' rows")
+
+        dataset_hint = query.get("dataset") or query.get("dataset_hint") or f"{self._dataset_id}_funnel_{self._chart_counter}"
+        dataset_id, dataset_path = self._write_inline_dataset(dataset_hint, data_rows)
+        stages = query.get("stages") if isinstance(query.get("stages"), list) else None
+        if not stages:
+            stages = [row.get(stage_column, f"Stage {idx+1}") for idx, row in enumerate(data_rows)]
+
+        options = query.get("options") if isinstance(query.get("options"), Mapping) else {}
+        section_payload = {
+            "operation": "funnel",
+            "title": chart.get("title") or section.get("title") or "Retention Funnel",
+            "dataset": dataset_id,
+            "stage_column": stage_column,
+            "value_column": value_column,
+            "stages": stages,
+            "options": {
+                "show_conversion": bool(options.get("show_conversion", True)),
+                "show_delta": bool(options.get("show_delta", True)),
+            },
+        }
+        if comparison_column:
+            section_payload["comparison_column"] = comparison_column
+
+        self._datasets.append({"id": dataset_id, "path": str(dataset_path), "format": "csv"})
+        return section_payload
+
+    def _write_inline_dataset(self, dataset_hint: str, rows: List[Mapping[str, Any]]) -> tuple[str, Path]:
+        dataset_id = self._sanitize_id(dataset_hint) if dataset_hint else f"inline_{uuid.uuid4().hex[:8]}"
+        filename = f"{self._source_dataset.stem}__{dataset_id}.csv"
+        target_path = self._source_dataset.parent / filename
+        fieldnames: List[str] = []
+        observed = set()
+        for row in rows:
+            if isinstance(row, Mapping):
+                for key in row.keys():
+                    if key not in observed:
+                        observed.add(key)
+                        fieldnames.append(str(key))
+        if not fieldnames:
+            raise PlanConversionError("inline dataset rows missing columns")
+
+        with target_path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in rows:
+                if not isinstance(row, Mapping):
+                    continue
+                writer.writerow({key: row.get(key) for key in fieldnames})
+
+        self._inline_artifacts.append(target_path)
+        return dataset_id, target_path
+
+    def _coerce_string(self, value: Any, fallback: str, *, optional: bool = False) -> Optional[str]:
+        if value is None:
+            return None if optional else fallback
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped:
+                return stripped
+        return None if optional else fallback
+
+    @staticmethod
+    def _sanitize_id(value: str) -> str:
+        sanitized = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in value)
+        sanitized = sanitized.strip("_")
+        return sanitized or f"inline_{uuid.uuid4().hex[:6]}"
+
+    def cleanup(self) -> None:
+        for artifact_path in self._inline_artifacts:
+            try:
+                artifact_path.unlink(missing_ok=True)
+            except OSError:
+                logger.debug("Failed to remove inline dataset %s", artifact_path, exc_info=True)
 
     def _normalize_agg(self, value: Any) -> str:
         if not isinstance(value, str):

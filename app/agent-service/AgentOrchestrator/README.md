@@ -68,13 +68,24 @@
 
 2. **Run the upload → plan workflow locally**
 
-   > When Ollama isn’t available, either set `ORCH_PLANNER_MODE=mock` to load the bundled sample plan or add `--skip-plan` to run profiling only.
-
    ```powershell
-   ORCH_PLANNER_MODE=mock python -m agent_orchestrator.cli ..\CsvProfilerAgent\samples\retail_superstore_sample.csv --output-dir .\artifacts --skip-plan
+   # terminal 1 – start the planner gateway (FastAPI) and point it at the ACA Ollama host
+   cd ..\OllamaStructuredJson
+   $env:OLLAMA_MODE='remote'
+   $env:OLLAMA_HOST='https://<ollama-app-fqdn>'
+   uvicorn app.service:app --port 8801 --reload
+
+   # terminal 2 – run the orchestrator CLI against that gateway
+   cd ..\AgentOrchestrator
+   $env:ORCH_PLANNER_GATEWAY_HOST='http://127.0.0.1:8801'
+   python -m agent_orchestrator.cli ..\CsvProfilerAgent\samples\retail_superstore_sample.csv --output-dir .\artifacts
+
+   # when running the orchestrator inside Docker, point at the host gateway instead
+   # (host.docker.internal routes back to the Windows/macOS host)
+   # docker run ... -e ORCH_PLANNER_GATEWAY_HOST="http://host.docker.internal:8801" ...
    ```
 
-   This will profile the sample CSV using the local profiler module, call the remote Ollama planner, and emit `artifacts/profile.json` and `artifacts/plan.json`.
+   > When Ollama isn’t available, either set `ORCH_PLANNER_MODE=mock` to load the bundled sample plan or add `--skip-plan` to run profiling only. Mock mode still produces a valid DashboardPlan payload, but it skips the gateway entirely.
 
 3. **Wire the orchestrator into the frontend** – once the CLI path is stable we can wrap the workflow with FastAPI endpoints that mimic the CPU orchestrator contracts (`/upload`, `/dashboard/status`, `/dashboard/view`).
 

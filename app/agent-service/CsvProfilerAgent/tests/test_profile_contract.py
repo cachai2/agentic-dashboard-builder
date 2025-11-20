@@ -10,7 +10,7 @@ from jsonschema import validate
 from app.profiling import ProfilingOptions, profile_csv_path
 
 ROOT = Path(__file__).resolve().parents[1]
-SCHEMA_PATH = ROOT / "schemas" / "dashboard_plan.schema.json"
+SCHEMA_PATH = ROOT / "schemas" / "dataset_profile.schema.json"
 SAMPLE_CSV = ROOT / "samples" / "retail_superstore_sample.csv"
 
 
@@ -50,3 +50,10 @@ def test_sampling_metadata_changes_when_max_rows_set() -> None:
     assert profile.row_count == 10_000
     assert profile.sampled_row_count == 500
     assert profile.sampling_ratio == 0.05
+
+
+def test_annotations_block_present() -> None:
+    profile = profile_csv_path(SAMPLE_CSV)
+    annotations = profile.llm_annotations
+    assert annotations is not None
+    assert annotations.get("kpis")

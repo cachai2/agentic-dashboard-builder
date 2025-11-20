@@ -119,6 +119,47 @@
                 "dataset": {
                   "type": "string"
                 },
+                "layout": {
+                  "type": "string"
+                },
+                "cards": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["title", "value"],
+                    "properties": {
+                      "title": {"type": "string"},
+                      "value": {"type": "number"},
+                      "unit": {"type": "string"},
+                      "delta": {},
+                      "trend": {
+                        "type": "array",
+                        "items": {}
+                      },
+                      "trend_label": {"type": "string"}
+                    },
+                    "additionalProperties": true
+                  }
+                },
+                "stages": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "tooltip_fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
                 "query": {
                   "type": "object",
                   "minProperties": 1,

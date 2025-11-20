@@ -58,34 +58,36 @@ export const DashboardViewer = ({ iframeUrl, charts, isGenerating, placeholder }
         />
       ) : null}
 
-      <div className={styles.charts}>
-        {charts.map((chart) => (
-          <article key={chart.id} className={styles.chartCard}>
-            <span className={styles.chartTitle}>{chart.title}</span>
-            <span className={styles.chartDescription}>{chart.description}</span>
-            {chart.plotlySpec ? (
-              <Plot
-                data={chart.plotlySpec.data as Data[]}
-                layout={{
-                  autosize: true,
-                  ...(chart.plotlySpec.layout as Partial<Layout>),
-                  height: 320,
-                  margin:
-                    (chart.plotlySpec.layout as Partial<Layout>)?.margin ?? {
-                      t: 40,
-                      l: 30,
-                      r: 16,
-                      b: 30,
-                    },
-                }}
-                config={{ displayModeBar: false, responsive: true }}
-                style={{ width: '100%', height: '320px' }}
-              />
-            ) : null}
-          </article>
-        ))}
-        {isGenerating ? <span className={styles.loadingLabel}>Updating charts…</span> : null}
-      </div>
+      {!iframeUrl ? (
+        <div className={styles.charts}>
+          {charts.map((chart) => (
+            <article key={chart.id} className={styles.chartCard}>
+              <span className={styles.chartTitle}>{chart.title}</span>
+              <span className={styles.chartDescription}>{chart.description}</span>
+              {chart.plotlySpec ? (
+                <Plot
+                  data={chart.plotlySpec.data as Data[]}
+                  layout={{
+                    autosize: true,
+                    ...(chart.plotlySpec.layout as Partial<Layout>),
+                    height: 320,
+                    margin:
+                      (chart.plotlySpec.layout as Partial<Layout>)?.margin ?? {
+                        t: 40,
+                        l: 30,
+                        r: 16,
+                        b: 30,
+                      },
+                  }}
+                  config={{ displayModeBar: false, responsive: true }}
+                  style={{ width: '100%', height: '320px' }}
+                />
+              ) : null}
+            </article>
+          ))}
+          {isGenerating ? <span className={styles.loadingLabel}>Updating charts…</span> : null}
+        </div>
+      ) : null}
     </div>
   )
 }

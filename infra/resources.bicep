@@ -26,6 +26,9 @@ param enableVnetIntegration bool = false
 @description('Enable persistent volume mount for the Ollama GPU service')
 param enableOllamaModelVolume bool = true
 
+@description('Base URL (no /json) for the OllamaStructuredJson gateway consumed by the orchestrator')
+param plannerGatewayHost string = 'http://127.0.0.1:11434'
+
 var baseName = toLower('${environmentName}-${resourceToken}')
 var sanitized = toLower(replace(replace(environmentName, '-', ''), '_', ''))
 var sanitizedBase = empty(sanitized) ? 'env' : sanitized
@@ -546,6 +549,10 @@ resource agentApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
             {
               name: 'OLLAMA_HOST'
               value: 'http://${ollamaModule.outputs.OLLAMA_HOST}'
+            }
+            {
+              name: 'ORCH_PLANNER_GATEWAY_HOST'
+              value: plannerGatewayHost
             }
             {
               name: 'GITHUB_PERSONAL_ACCESS_TOKEN'

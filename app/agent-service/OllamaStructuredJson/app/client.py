@@ -121,6 +121,12 @@ class OllamaClient:
         content = self.extract_message_text(response)
         return content, response
 
+    def _load_mock_plan(self) -> str:
+        sample_path = PROJECT_ROOT / "samples" / "mock_plan.json"
+        if not sample_path.exists():
+            raise FileNotFoundError(f"Mock plan sample missing: {sample_path}")
+        return sample_path.read_text(encoding="utf-8")
+
     def _build_endpoint(self) -> Tuple[str, bool]:
         base = self.settings.ollama_host.rstrip("/")
         api_path = (self.settings.ollama_api_path or "").strip()

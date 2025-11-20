@@ -5,18 +5,17 @@ from pathlib import Path
 from typing import Literal
 
 from pydantic import Field
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_ROOT.parent
-PLAYGROUND_ROOT = PROJECT_ROOT.parent
-WORKSPACE_ROOT = PLAYGROUND_ROOT.parent
+REPO_ROOT = PROJECT_ROOT.parent
 
 
 class Settings(BaseSettings):
     ollama_mode: Literal["mock", "remote"] = Field(
-        default="mock",
+        default="remote",
         validation_alias="OLLAMA_MODE",
         description="Controls whether the service calls a remote Ollama host or returns canned responses.",
     )
@@ -51,7 +50,7 @@ class Settings(BaseSettings):
         description="When no schema is attached, force Ollama JSON mode.",
     )
     schema_path: Path = Field(
-        default=WORKSPACE_ROOT / "schemas" / "dashboard_plan.schema.json",
+        default=REPO_ROOT / "schemas" / "dashboard_plan.schema.json",
         validation_alias="PLAN_SCHEMA_PATH",
     )
     prompt_dir: Path = Field(
@@ -59,14 +58,16 @@ class Settings(BaseSettings):
         validation_alias="PROMPT_DIR",
     )
     service_port: int = Field(
-        default=11434,
+        default=8801,
         validation_alias="PORT",
         description="Port uvicorn should bind to when launched locally.",
     )
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 
 @lru_cache(maxsize=1)

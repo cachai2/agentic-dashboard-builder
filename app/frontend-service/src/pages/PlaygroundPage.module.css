@@ -1,10 +1,12 @@
 .layout {
   display: grid;
   grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  grid-auto-rows: auto;
+  grid-template-areas:
+    'input status'
+    'input dashboard';
   gap: 24px;
   padding: 0 32px 32px;
+  align-items: flex-start;
 }
 
 .column {
@@ -18,13 +20,14 @@
   position: sticky;
   top: 24px;
   align-self: flex-start;
-  grid-row: 1 / span 2;
   height: fit-content;
+  grid-area: input;
 }
 
 .statusColumn {
-  min-height: 100%;
   align-self: stretch;
+  min-height: 0;
+  grid-area: status;
 }
 
 .statusPanel {
@@ -40,19 +43,46 @@
 }
 
 .dashboardRow {
-  grid-column: 1 / -1;
+  grid-area: dashboard;
+  min-height: 0;
+}
+
+.dashboardPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: calc(100vh - 160px);
+}
+
+.dashboardBody {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 @media (max-width: 960px) {
   .layout {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
+    grid-template-areas: 'input' 'status' 'dashboard';
     padding: 0 20px 20px;
   }
 
   .inputColumn {
     position: static;
-    grid-row: auto;
+    grid-area: input;
     height: auto;
+  }
+
+  .statusColumn,
+  .dashboardRow {
+    grid-area: auto;
+  }
+
+  .dashboardPanel {
+    max-height: none;
   }
 }

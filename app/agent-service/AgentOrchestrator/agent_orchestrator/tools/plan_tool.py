@@ -9,6 +9,7 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any, Dict, Optional
 
+import jsonschema
 from ..settings import get_settings
 
 try:  # pragma: no cover - fallback for local editing without the SDK installed
@@ -23,6 +24,7 @@ except ImportError:  # pragma: no cover
 import httpx
 
 try:
+    from OllamaStructuredJson.app.augmentations import augment_plan
     from OllamaStructuredJson.app.builder import compute_prompt_hash, render_prompt
     from OllamaStructuredJson.app.config import Settings as PlannerSettings
     from OllamaStructuredJson.app.validator import PlanValidator
@@ -35,6 +37,9 @@ except ModuleNotFoundError:  # pragma: no cover - fallback to the Playground nam
 
     _config_module = import_module("Playground.OllamaStructuredJson.app.config")
     PlannerSettings = _config_module.Settings
+
+    _augment_module = import_module("Playground.OllamaStructuredJson.app.augmentations")
+    augment_plan = _augment_module.augment_plan
 
     _validator_module = import_module("Playground.OllamaStructuredJson.app.validator")
     PlanValidator = _validator_module.PlanValidator
@@ -89,9 +94,7 @@ class StructuredPlanner:
         self._http_client = httpx.Client(timeout=settings.ollama_timeout_seconds)
         self._validator = PlanValidator(planner_settings)
         self._model_name = planner_settings.ollama_model
-        self._mock_plan_path = (
-            Path(__file__).resolve().parents[3].parent / "OllamaStructuredJson" / "samples" / "mock_plan.json"
-        )
+        self._mock_plan_path = _resolve_mock_plan_path()
 
     def generate(self, profile_summary: Dict[str, Any], session_id: Optional[str]) -> Dict[str, Any]:
         prompt_bundle = render_prompt(profile_summary, prompt_version=self._prompt_version)
@@ -103,12 +106,16 @@ class StructuredPlanner:
         if self._planner_mode == "mock":
             raw_response = self._mock_plan_path.read_text(encoding="utf-8")
             plan = self._validator.parse_and_validate(raw_response)
+            plan = augment_plan(plan, profile_summary)
+            jsonschema.validate(instance=plan, schema=self._validator.schema)
             return self._build_success(plan, raw_response, 1, start, prompt_bundle, session_id)
 
         for attempt in range(2):
             try:
                 raw_response = self._invoke_gateway(prompt_bundle, session_id)
                 plan = self._validator.parse_and_validate(raw_response)
+                plan = augment_plan(plan, profile_summary)
+                jsonschema.validate(instance=plan, schema=self._validator.schema)
                 return self._build_success(plan, raw_response, attempt + 1, start, prompt_bundle, session_id)
             except Exception as exc:  # pragma: no cover - relies on live service
                 last_error = exc
@@ -199,3 +206,20 @@ def generate_dashboard_plan(
 
     planner = _get_planner()
     return planner.generate(profile_summary=profile_summary, session_id=session_id)
+
+
+def _resolve_mock_plan_path() -> Path:
+    """Find the mock plan sample regardless of repo layout."""
+
+    repo_root = Path(__file__).resolve().parents[3]
+    candidates = [
+        repo_root / "OllamaStructuredJson" / "samples" / "mock_plan.json",
+        repo_root / "agent-service" / "OllamaStructuredJson" / "samples" / "mock_plan.json",
+        repo_root.parent / "OllamaStructuredJson" / "samples" / "mock_plan.json",
+        repo_root.parent / "agent-service" / "OllamaStructuredJson" / "samples" / "mock_plan.json",
+        repo_root.parent / "Playground" / "OllamaStructuredJson" / "samples" / "mock_plan.json",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]

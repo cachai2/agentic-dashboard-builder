@@ -53,3 +53,15 @@ class GeneralChatResponse(BaseModel):
     content: str
     model: str
     provider_response: Dict[str, Any]
+
+
+class PlanRequest(BaseModel):
+    profile_summary: Dict[str, Any]
+    prompt_version: str = Field(default="v1", description="Prompt template identifier.")
+    session_id: Optional[str] = Field(default=None, description="Optional session identifier for tracing.")
+
+
+class PlanResponse(BaseModel):
+    plan: Dict[str, Any]
+    metadata: Dict[str, Any]
+    raw_response: str

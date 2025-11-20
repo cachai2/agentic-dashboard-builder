@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DatasetProfile",
+  "type": "object",
+  "required": [
+    "dataset_name",
+    "row_count",
+    "sampled_row_count",
+    "sampling_ratio",
+    "column_count",
+    "generated_at",
+    "columns"
+  ],
+  "properties": {
+    "dataset_name": {"type": "string", "minLength": 1},
+    "row_count": {"type": "integer", "minimum": 0},
+    "sampled_row_count": {"type": "integer", "minimum": 0},
+    "sampling_ratio": {"type": "number", "minimum": 0, "maximum": 1},
+    "column_count": {"type": "integer", "minimum": 0},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "llm_annotations": {"type": ["object", "null"]},
+    "columns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "semantic_type",
+          "null_count",
+          "null_pct",
+          "distinct_count"
+        ],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "semantic_type": {
+            "type": "string",
+            "enum": ["numeric", "categorical", "datetime", "boolean"]
+          },
+          "null_count": {"type": "integer", "minimum": 0},
+          "null_pct": {"type": "number", "minimum": 0, "maximum": 100},
+          "distinct_count": {"type": "integer", "minimum": 0},
+          "example": {"type": ["string", "null"]},
+          "numeric_stats": {
+            "oneOf": [
+              {"type": "null"},
+              {
+                "type": "object",
+                "properties": {
+                  "min": {"type": ["number", "null"]},
+                  "max": {"type": ["number", "null"]},
+                  "mean": {"type": ["number", "null"]},
+                  "stddev": {"type": ["number", "null"]},
+                  "p05": {"type": ["number", "null"]},
+                  "p95": {"type": ["number", "null"]}
+                },
+                "additionalProperties": false
+              }
+            ]
+          },
+          "categorical_stats": {
+            "oneOf": [
+              {"type": "null"},
+              {
+                "type": "object",
+                "properties": {
+                  "top_values": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["count", "percent"],
+                      "properties": {
+                        "value": {"type": ["string", "null"]},
+                        "count": {"type": "integer", "minimum": 0},
+                        "percent": {"type": "number", "minimum": 0, "maximum": 100}
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

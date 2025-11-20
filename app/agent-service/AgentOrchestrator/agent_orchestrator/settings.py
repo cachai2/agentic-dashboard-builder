@@ -39,7 +39,7 @@ class OrchestratorSettings(BaseSettings):
         ge=1,
     )
     planner_gateway_host: HttpUrl = Field(
-        default="http://127.0.0.1:8000",
+        default="http://127.0.0.1:8801",
         description="Base URL for the OllamaStructuredJson gateway that exposes the /json endpoint.",
     )
     ollama_host: HttpUrl = Field(
