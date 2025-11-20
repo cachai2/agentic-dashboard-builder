@@ -7,7 +7,8 @@ param containerAppsEnvironmentId string
 param userAssignedIdentityId string
 param containerRegistryEndpoint string
 
-param ollamaAppName string
+@description('Name of the Ollama Container App')
+param ollamaAppName string = '${environmentName}-ollama'
 param ollamaModelStorageName string
 param enableStorageMount bool = true
 
@@ -15,7 +16,7 @@ param enableStorageMount bool = true
 resource ollamaApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
   name: ollamaAppName
   location: location
-  tags: {'azd-env-name': environmentName, 'azd-service-name': 'gpu-planner'}
+  tags: {'azd-env-name': environmentName, 'azd-service-name': 'ollama'}
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {

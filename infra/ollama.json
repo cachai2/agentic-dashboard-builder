@@ -1,0 +1,123 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.35.1.17967",
+      "templateHash": "17505370246126132008"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "environmentName": {
+      "type": "string"
+    },
+    "containerAppsEnvironmentId": {
+      "type": "string"
+    },
+    "userAssignedIdentityId": {
+      "type": "string"
+    },
+    "containerRegistryEndpoint": {
+      "type": "string"
+    },
+    "ollamaAppName": {
+      "type": "string"
+    },
+    "ollamaModelStorageName": {
+      "type": "string"
+    },
+    "enableStorageMount": {
+      "type": "bool",
+      "defaultValue": true
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2025-02-02-preview",
+      "name": "[parameters('ollamaAppName')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "azd-env-name": "[parameters('environmentName')]",
+        "azd-service-name": "gpu-planner"
+      },
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', parameters('userAssignedIdentityId'))]": {}
+        }
+      },
+      "properties": {
+        "environmentId": "[parameters('containerAppsEnvironmentId')]",
+        "workloadProfileName": "GPU-A100",
+        "configuration": {
+          "ingress": {
+            "external": true,
+            "targetPort": 11434,
+            "allowInsecure": true
+          },
+          "registries": [
+            {
+              "server": "[parameters('containerRegistryEndpoint')]",
+              "identity": "[parameters('userAssignedIdentityId')]"
+            }
+          ]
+        },
+        "template": {
+          "initContainers": [
+            {
+              "name": "ollama-prefetch",
+              "image": "ghcr.io/simonjj/ollama-model-pull:3102025-1240",
+              "args": [
+                "pull",
+                "gpt-oss:20b"
+              ],
+              "resources": {
+                "cpu": 2,
+                "memory": "4Gi"
+              },
+              "volumeMounts": "[if(parameters('enableStorageMount'), createArray(createObject('volumeName', 'ollama-models', 'mountPath', '/root/.ollama')), createArray())]"
+            }
+          ],
+          "containers": [
+            {
+              "name": "ollama",
+              "image": "docker.io/ollama/ollama",
+              "env": [
+                {
+                  "name": "OLLAMA_CONTEXT_LENGTH",
+                  "value": "32768"
+                },
+                {
+                  "name": "OLLAMA_KEEP_ALIVE",
+                  "value": "15m"
+                }
+              ],
+              "resources": {
+                "cpu": 22,
+                "memory": "216Gi"
+              },
+              "volumeMounts": "[if(parameters('enableStorageMount'), createArray(createObject('volumeName', 'ollama-models', 'mountPath', '/root/.ollama')), createArray())]"
+            }
+          ],
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 1
+          },
+          "volumes": "[if(parameters('enableStorageMount'), createArray(createObject('name', 'ollama-models', 'storageType', 'AzureFile', 'storageName', parameters('ollamaModelStorageName'))), createArray())]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "OLLAMA_HOST": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('ollamaAppName')), '2025-02-02-preview').configuration.ingress.fqdn]"
+    }
+  }
+}

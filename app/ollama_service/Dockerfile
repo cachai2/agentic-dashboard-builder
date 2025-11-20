@@ -1,9 +1,10 @@
+# Ollama service container exposes the API on port 11434.
 FROM ollama/ollama:latest
 
-COPY app/ollama_service/start-ollama.sh /start-ollama.sh
-# Expose the default Ollama port
+ENV OLLAMA_HOST=0.0.0.0 \
+	OLLAMA_ORIGINS="*"
+
 EXPOSE 11434
 
-# Use the startup script
-ENTRYPOINT ["/start-ollama.sh"]
-CMD ["pull", "gpt-oss:20b"]
+ENTRYPOINT ["ollama"]
+CMD ["serve"]

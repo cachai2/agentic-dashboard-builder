@@ -468,7 +468,7 @@ module ollamaModule './ollama.bicep' = {
 resource agentApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
   name: agentAppName
   location: location
-  tags: {'azd-service-name': 'cpu-app'}
+  tags: {'azd-service-name': 'agent'}
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {

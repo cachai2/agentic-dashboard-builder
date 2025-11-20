@@ -1,0 +1,15 @@
+node_modules
+.dist
+.vscode
+.git
+.github
+.gitignore
+Dockerfile
+README.md
+coverage
+playwright-report
+playwright/.cache
+test-results
+tests
+mock
+*.log
