@@ -7,6 +7,7 @@ import type {
   ToolState,
   UploadMetadata,
   UploadSession,
+  WorkflowEventsResponse,
 } from '@/types/orchestrator'
 import type { PlannerClient } from './types'
 
@@ -45,6 +46,7 @@ type MockSession = {
   metrics: MetricSummary[]
   charts: ChartConfig[]
   iframeUrl: string
+  events: WorkflowEventsResponse
 }
 
 const sessions = new Map<string, MockSession>()
@@ -166,6 +168,7 @@ const createMockSession = (
   const headers = summarizeCsv(csvText).headers
   const sessionId = generateId()
   const uploadedAt = nowIso()
+  const startedAt = Date.now()
   const session: UploadSession = {
     sessionId,
     uploadedAt,
@@ -183,13 +186,33 @@ const createMockSession = (
 
   const metrics = deriveMetrics(metadata.objective, headers)
   const charts = deriveCharts(metadata.objective, headers)
+  let eventCursor = 0
+  const events: WorkflowEventsResponse = {
+    events: steps.map((step, index) => {
+      const timestamp = new Date(startedAt + eventCursor).toISOString()
+      eventCursor += step.durationMs
+      return {
+        sequence: index,
+        type: 'ExecutorCompletedEvent',
+        origin: 'EXECUTOR',
+        timestamp,
+        payload: {
+          executorId: step.toolName,
+          reasoning: step.reasoning,
+          metadata: step.metadata,
+          durationMs: step.durationMs,
+        },
+      }
+    }),
+  }
   const sessionRecord: MockSession = {
     session,
-    startedAt: Date.now(),
+    startedAt,
     steps,
     metrics,
     charts,
     iframeUrl: '/sample-dashboard.html',
+    events,
   }
 
   registerDashboardHook(sessionId, metrics, charts)
@@ -258,8 +281,14 @@ const getDashboard = async (sessionId: string): Promise<DashboardResponse> => {
   }
 }
 
+const getEvents = async (sessionId: string): Promise<WorkflowEventsResponse> => {
+  const session = ensureSession(sessionId)
+  return session.events
+}
+
 export const mockPlannerClient: PlannerClient = {
   uploadCsv,
   getStatus,
   getDashboard,
+  getEvents,
 }

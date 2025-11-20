@@ -67,3 +67,18 @@ class DashboardResponse(BaseModel):
     charts: List[ChartConfig]
 
     model_config = ConfigDict(populate_by_name=True)
+
+
+class WorkflowEventEntry(BaseModel):
+    sequence: int
+    type: str
+    origin: str
+    timestamp: datetime
+    payload: Dict[str, Any] = Field(default_factory=dict)
+
+
+class WorkflowEventsResponse(BaseModel):
+    events: List[WorkflowEventEntry]
+    events_url: Optional[str] = Field(alias="eventsUrl", default=None)
+
+    model_config = ConfigDict(populate_by_name=True)

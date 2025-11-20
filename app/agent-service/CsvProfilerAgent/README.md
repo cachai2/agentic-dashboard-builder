@@ -115,6 +115,20 @@ Agents that support function calling (OpenAI, LangChain, Semantic Kernel) can ma
 - Deterministic profilers should handle arbitrary CSV schemas by inferring column types, null %, distinct counts, etc., while template adapters map those stats into the fixed JSON.
 - This split lets contract tests remain reproducible while still giving Agent Frameworks narrative insights from models when needed.
 
+### `llm_annotations` structure
+
+Planner-focused copilots now receive a curated `llm_annotations` block alongside the canonical profile. Every entry is optional (the profiler only emits the sections it can derive from the sampled frame). Current fields include:
+
+- `dataset_shape` – lightweight row/column counts so prompts can mention scale without re-reading the root metadata.
+- `target_signal` – detected binary outcome column (e.g., `Churn`) plus the positive label and overall rate.
+- `kpis` – ready-to-plot KPI candidates (active customers, churn rate, avg tenure / monthly charges, etc.).
+- `segments` – churn rate deltas grouped by `Contract`, `InternetService`, `tenure_band`, and other categorical levers.
+- `retention_funnel` – ordered stages with counts (All customers → Phone service → Internet service → Bundle add-ons → Churned) so planners can author funnels without recomputing counts.
+- `loyalty_hint` – scatter-ready column mappings (`MonthlyCharges` vs. `TotalCharges`, sized by `tenure`, colored by the target) plus churn percentages for short-tenure/high-spend customers.
+- `driver_candidates` – top categorical features ranked by churn-rate deltas to power heatmaps or grouped comparisons.
+
+Downstream planners treat `llm_annotations` as advisory metadata; the canonical column stats remain untouched so contract tests stay deterministic.
+
 ## Sampling Controls
 
 - All profiling surfaces accept an optional `max_rows` parameter; when present and lower than the CSV size we run stats against a deterministic sample taken with a fixed seed.

@@ -50,3 +50,16 @@ export type DashboardResponse = {
   metrics: MetricSummary[]
   charts: ChartConfig[]
 }
+
+export type WorkflowEventEntry = {
+  sequence: number
+  type: string
+  origin: string
+  timestamp: string
+  payload: Record<string, unknown>
+}
+
+export type WorkflowEventsResponse = {
+  events: WorkflowEventEntry[]
+  eventsUrl?: string
+}

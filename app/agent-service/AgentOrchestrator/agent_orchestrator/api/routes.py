@@ -3,7 +3,13 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 
 from .dependencies import get_coordinator
-from .models import DashboardResponse, StatusResponse, UploadMetadata, UploadSession
+from .models import (
+    DashboardResponse,
+    StatusResponse,
+    UploadMetadata,
+    UploadSession,
+    WorkflowEventsResponse,
+)
 from ..runtime.coordinator import DashboardNotReadyError, SessionCoordinator
 from ..runtime.session_store import SessionNotFoundError
 
@@ -48,3 +54,15 @@ async def get_dashboard(
         raise HTTPException(status_code=404, detail="Session not found") from exc
     except DashboardNotReadyError as exc:
         raise HTTPException(status_code=425, detail=str(exc)) from exc
+
+
+@router.get("/dashboard/events", response_model=WorkflowEventsResponse, response_model_by_alias=True)
+async def get_workflow_events(
+    session_id: str = Query(..., alias="sessionId"),
+    coordinator: SessionCoordinator = Depends(get_coordinator),
+) -> WorkflowEventsResponse:
+    try:
+        events, events_url = await coordinator.get_events(session_id)
+    except SessionNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Session not found") from exc
+    return WorkflowEventsResponse(events=events, events_url=events_url)

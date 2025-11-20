@@ -4,6 +4,7 @@ import type {
   DashboardResponse,
   UploadMetadata,
   UploadSession,
+  WorkflowEventEntry,
 } from '@/types/orchestrator'
 import { plannerClient as defaultPlannerClient } from '@/services/plannerClient'
 import type { PlannerClient } from '@/services/types'
@@ -16,6 +17,7 @@ export const usePlannerSession = (client: PlannerClient = defaultPlannerClient) 
   const [session, setSession] = useState<UploadSession | null>(null)
   const [statusEntries, setStatusEntries] = useState<AgentStatusEntry[]>([])
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
+  const [events, setEvents] = useState<WorkflowEventEntry[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -35,6 +37,8 @@ export const usePlannerSession = (client: PlannerClient = defaultPlannerClient) 
     try {
       const status = await client.getStatus(session.sessionId)
       setStatusEntries(status.entries)
+      const eventsResponse = await client.getEvents(session.sessionId)
+      setEvents(eventsResponse.events)
       if (status.isComplete) {
         const dashboardResponse = await client.getDashboard(session.sessionId)
         setDashboard(dashboardResponse)
@@ -60,6 +64,7 @@ export const usePlannerSession = (client: PlannerClient = defaultPlannerClient) 
       setError(null)
       setDashboard(null)
       setStatusEntries([])
+      setEvents([])
       try {
         const createdSession = await client.uploadCsv(file, metadata)
         setSession(createdSession)
@@ -81,6 +86,7 @@ export const usePlannerSession = (client: PlannerClient = defaultPlannerClient) 
     session,
     statusEntries,
     dashboard,
+    events,
     isUploading,
     error,
     isComplete: Boolean(dashboard),

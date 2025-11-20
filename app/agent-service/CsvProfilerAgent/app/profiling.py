@@ -11,6 +11,7 @@ from typing import Optional
 import pandas as pd
 from pandas.api import types as ptypes
 
+from .annotations import build_llm_annotations
 from .schemas import CategoricalStats, ColumnProfile, DatasetProfile, NumericStats, TopValue
 
 
@@ -118,6 +119,8 @@ def _profile_dataframe(
         if total_rows == 0
         else round(sampled_rows / total_rows, 6)
     )
+    llm_annotations = build_llm_annotations(sampled_df)
+
     return DatasetProfile(
         dataset_name=dataset_name,
         row_count=total_rows,
@@ -126,6 +129,7 @@ def _profile_dataframe(
         column_count=int(len(sampled_df.columns)),
         generated_at=datetime.now(timezone.utc),
         columns=columns,
+        llm_annotations=llm_annotations,
     )
 
 

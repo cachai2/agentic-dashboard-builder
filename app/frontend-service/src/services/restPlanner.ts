@@ -3,6 +3,7 @@ import type {
   StatusResponse,
   UploadMetadata,
   UploadSession,
+  WorkflowEventsResponse,
 } from '@/types/orchestrator'
 import type { PlannerClient } from './types'
 
@@ -44,8 +45,16 @@ const getDashboard = async (sessionId: string): Promise<DashboardResponse> => {
   return (await response.json()) as DashboardResponse
 }
 
+const getEvents = async (sessionId: string): Promise<WorkflowEventsResponse> => {
+  const response = await throwIfNotOk(
+    await fetch(`${baseUrl}/dashboard/events?sessionId=${encodeURIComponent(sessionId)}`),
+  )
+  return (await response.json()) as WorkflowEventsResponse
+}
+
 export const apiPlannerClient: PlannerClient = {
   uploadCsv,
   getStatus,
   getDashboard,
+  getEvents,
 }

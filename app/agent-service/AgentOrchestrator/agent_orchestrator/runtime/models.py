@@ -69,3 +69,6 @@ class SessionRecord:
     results_url: str | None = None
     dashboard_blob_path: str | None = None
     dashboard_url: str | None = None
+    events: list[dict[str, Any]] = field(default_factory=list)
+    events_blob_path: str | None = None
+    events_url: str | None = None

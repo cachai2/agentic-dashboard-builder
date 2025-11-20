@@ -2,11 +2,23 @@
 
 import asyncio
 import logging
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, is_dataclass
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional, Never
+from typing import Any, Dict, List, Optional, Never
 
-from agent_framework import WorkflowBuilder, WorkflowContext, WorkflowOutputEvent, executor
+from agent_framework import (
+    ExecutorEvent,
+    ExecutorFailedEvent,
+    RequestInfoEvent,
+    WorkflowBuilder,
+    WorkflowContext,
+    WorkflowEvent,
+    WorkflowFailedEvent,
+    WorkflowOutputEvent,
+    WorkflowStatusEvent,
+    executor,
+)
 
 from ..tools import generate_dashboard_plan, profile_dataset
 
@@ -38,6 +50,34 @@ class WorkflowResult:
 
     profile: Dict[str, Any]
     plan: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class WorkflowEventRecord:
+    """Serializable snapshot of an Agent Framework workflow event."""
+
+    sequence: int
+    type: str
+    origin: str
+    timestamp: datetime
+    payload: Dict[str, Any]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "sequence": self.sequence,
+            "type": self.type,
+            "origin": self.origin,
+            "timestamp": self.timestamp.isoformat(),
+            "payload": self.payload,
+        }
+
+
+@dataclass
+class WorkflowExecution:
+    """Result plus emitted events from a workflow run."""
+
+    result: WorkflowResult
+    events: List[WorkflowEventRecord]
 
 
 def _build_workflow():
@@ -115,7 +155,97 @@ class UploadToDashboardWorkflow:
         raise RuntimeError("run() cannot execute inside an active event loop; use run_async() instead")
 
     async def run_async(self, request: OrchestratorRequest) -> WorkflowResult:
+        execution = await self.run_with_events_async(request)
+        return execution.result
+
+    def run_with_events(
+        self,
+        csv_path: Path,
+        *,
+        dataset_name: Optional[str] = None,
+        session_id: Optional[str] = None,
+        max_rows: Optional[int] = None,
+        skip_planner: bool = False,
+    ) -> WorkflowExecution:
+        request = OrchestratorRequest(
+            csv_path=csv_path,
+            dataset_name=dataset_name,
+            session_id=session_id,
+            max_rows=max_rows,
+            skip_planner=skip_planner,
+        )
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(self.run_with_events_async(request))
+        raise RuntimeError("run_with_events() cannot execute inside an active event loop; use run_with_events_async() instead")
+
+    async def run_with_events_async(self, request: OrchestratorRequest) -> WorkflowExecution:
+        events: List[WorkflowEventRecord] = []
+        sequence = 0
         async for event in self._workflow.run_stream(request):
+            events.append(_serialize_event(sequence, event))
+            sequence += 1
             if isinstance(event, WorkflowOutputEvent):
-                return event.data
+                return WorkflowExecution(result=event.data, events=events)
         raise RuntimeError("Workflow completed without producing an output")
+
+
+def _serialize_event(sequence: int, event: WorkflowEvent) -> WorkflowEventRecord:
+    payload: Dict[str, Any] = {}
+    if isinstance(event, WorkflowStatusEvent):
+        payload["state"] = event.state.value
+        if event.data is not None:
+            payload["data"] = _safe_payload(event.data)
+    elif isinstance(event, WorkflowOutputEvent):
+        payload["sourceExecutorId"] = event.source_executor_id
+        payload["data"] = _safe_payload(event.data)
+    elif isinstance(event, WorkflowFailedEvent):
+        payload["error"] = asdict(event.details)
+        if event.data is not None:
+            payload["data"] = _safe_payload(event.data)
+    elif isinstance(event, ExecutorFailedEvent):
+        payload["executorId"] = event.executor_id
+        payload["error"] = asdict(event.details)
+    elif isinstance(event, ExecutorEvent):
+        payload["executorId"] = event.executor_id
+        if event.data is not None:
+            payload["data"] = _safe_payload(event.data)
+    elif isinstance(event, RequestInfoEvent):
+        payload = {
+            "requestId": event.request_id,
+            "sourceExecutorId": event.source_executor_id,
+            "requestType": event.request_type.__name__,
+            "responseType": event.response_type.__name__,
+            "data": _safe_payload(event.data),
+        }
+    else:
+        if event.data is not None:
+            payload["data"] = _safe_payload(event.data)
+    return WorkflowEventRecord(
+        sequence=sequence,
+        type=event.__class__.__name__,
+        origin=str(event.origin),
+        timestamp=datetime.now(timezone.utc),
+        payload=payload,
+    )
+
+
+def _safe_payload(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, (list, dict)):
+        return value
+    if hasattr(value, "model_dump"):
+        try:
+            return value.model_dump()
+        except Exception:  # pragma: no cover - defensive
+            return repr(value)
+    if is_dataclass(value):
+        try:
+            return asdict(value)
+        except Exception:  # pragma: no cover
+            return repr(value)
+    return repr(value)

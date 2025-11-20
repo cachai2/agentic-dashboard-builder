@@ -69,6 +69,11 @@ class ArtifactStorage:
         await asyncio.to_thread(self._upload_bytes, blob_path, html)
         return blob_path
 
+    async def upload_events(self, run_id: str, payload: list[dict[str, Any]]) -> str:
+        blob_path = f"{self._settings.runs_prefix}/{run_id}/events.json"
+        await asyncio.to_thread(self._upload_bytes, blob_path, payload)
+        return blob_path
+
     async def download_results(self, run_id: str) -> dict[str, Any]:
         blob_path = f"{self._settings.runs_prefix}/{run_id}/results.json"
         data = await asyncio.to_thread(self._download_bytes, blob_path)
@@ -90,8 +95,8 @@ class ArtifactStorage:
     async def generate_dataset_read_url(self, blob_path: str, *, expiry_minutes: int = 30) -> str:
         return await self.generate_artifact_read_url(blob_path, expiry_minutes=expiry_minutes)
 
-    def _upload_bytes(self, blob_path: str, data: bytes | dict[str, Any] | str) -> None:
-        if isinstance(data, dict):
+    def _upload_bytes(self, blob_path: str, data: bytes | dict[str, Any] | list[Any] | str) -> None:
+        if isinstance(data, (dict, list)):
             stream = BytesIO()
             stream.write(json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"))
             stream.seek(0)

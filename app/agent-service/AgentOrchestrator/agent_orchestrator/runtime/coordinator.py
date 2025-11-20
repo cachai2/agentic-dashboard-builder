@@ -16,7 +16,7 @@ from ..api.models import (
     UploadMetadata,
     UploadSession,
 )
-from ..workflows import UploadToDashboardWorkflow, WorkflowResult
+from ..workflows import UploadToDashboardWorkflow, WorkflowEventRecord, WorkflowExecution, WorkflowResult
 from .dashboard_renderer import DashboardRenderer, RenderedDashboard
 from .models import (
     AgentStepSnapshot,
@@ -117,6 +117,10 @@ class SessionCoordinator:
             ],
         )
 
+    async def get_events(self, session_id: str) -> tuple[list[dict[str, Any]], str | None]:
+        record = await self._store.get(session_id)
+        return list(record.events), record.events_url
+
     def _schedule_workflow(self, session_id: str) -> None:
         task = asyncio.create_task(self._run_workflow(session_id))
         self._background_tasks.add(task)
@@ -130,12 +134,14 @@ class SessionCoordinator:
                 return
             await self._record_step_state(session_id, step_id="profile", tool_name="Profiler", state="running")
             await self._record_step_state(session_id, step_id="planner", tool_name="Planner", state="idle")
-            result = await asyncio.to_thread(
-                self._workflow.run,
+            execution: WorkflowExecution = await asyncio.to_thread(
+                self._workflow.run_with_events,
                 record.dataset_local_path,
                 dataset_name=record.metadata.scenario_name,
                 session_id=record.session_id,
             )
+            await self._persist_workflow_events(session_id, execution.events)
+            result = execution.result
             await self._record_step_state(session_id, step_id="profile", tool_name="Profiler", state="success")
             if result.plan:
                 await self._record_step_state(session_id, step_id="planner", tool_name="Planner", state="running")
@@ -232,6 +238,19 @@ class SessionCoordinator:
             dashboard_artifacts,
             dashboard_blob_path=dashboard_blob,
             dashboard_url=dashboard_url,
+        )
+
+    async def _persist_workflow_events(self, session_id: str, events: list[WorkflowEventRecord]) -> None:
+        serialized = [event.to_dict() for event in events]
+        events_blob: str | None = None
+        events_url: str | None = None
+        if serialized:
+            events_blob, events_url = await self._persistence.persist_events(session_id, serialized)
+        await self._store.record_events(
+            session_id,
+            events=serialized,
+            events_blob_path=events_blob,
+            events_url=events_url,
         )
 
     def _build_dashboard_artifacts(

@@ -4,6 +4,7 @@ import asyncio
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from .models import AgentStepSnapshot, DashboardArtifacts, SessionRecord, UploadMetadataPayload
 
@@ -87,6 +88,23 @@ class SessionStore:
             record = self._get_locked(session_id)
             record.results_blob_path = results_blob_path
             record.results_url = results_url
+            return record
+
+    async def record_events(
+        self,
+        session_id: str,
+        *,
+        events: list[dict[str, Any]],
+        events_blob_path: str | None = None,
+        events_url: str | None = None,
+    ) -> SessionRecord:
+        async with self._lock:
+            record = self._get_locked(session_id)
+            record.events = events
+            if events_blob_path is not None:
+                record.events_blob_path = events_blob_path
+            if events_url is not None:
+                record.events_url = events_url
             return record
 
     async def upsert_status(self, session_id: str, snapshot: AgentStepSnapshot) -> SessionRecord:

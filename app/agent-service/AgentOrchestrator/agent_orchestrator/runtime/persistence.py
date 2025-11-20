@@ -27,5 +27,10 @@ class PersistenceManager:
         sas_url = await self._storage.generate_artifact_read_url(blob_path, expiry_minutes=720)
         return blob_path, sas_url
 
+    async def persist_events(self, session_id: str, events: list[dict[str, Any]]) -> Tuple[str, str]:
+        blob_path = await self._storage.upload_events(session_id, events)
+        sas_url = await self._storage.generate_artifact_read_url(blob_path, expiry_minutes=720)
+        return blob_path, sas_url
+
     async def download_dataset(self, blob_path: str) -> bytes:
         return await self._storage.download_dataset(blob_path)
