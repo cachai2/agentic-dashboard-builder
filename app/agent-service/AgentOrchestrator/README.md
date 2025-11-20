@@ -13,7 +13,7 @@
 | Capability | Folder | Surface we will wrap |
 | --- | --- | --- |
 | Dataset profiling + schema JSON | `Playground/CsvProfilerAgent` | FastAPI `/profile`, CLI scripts, and future Agent Framework tool `profile_csv`. |
-| Structured JSON planner (Ollama remote) | `Playground/OllamaStructuredJson` | FastAPI `/plan`, direct Ollama `/api/chat`, schema validator. |
+| Structured JSON planner (Ollama gateway) | `Playground/OllamaStructuredJson` | FastAPI `/json` + `/general` proxy that fronts Ollama `/api/chat`, schema validator. |
 | Plotly HTML rendering | `Playground/ChartRenderingAgent` | CLI tools (`compose_tool`, `render_chart_tool`) to turn a `DashboardPlan` into HTML. |
 | Prebuilt chart adapters | `Playground/PrebuiltChartGenAgent` | Agent Framework tools under `agent_tools/chart_generation_tools.py`. |
 | Frontend mock/real APIs | `Playground/FrontendAgent` | REST contract we eventually expose from this orchestrator. |
@@ -43,7 +43,7 @@
    - Author request/response models for `ProfileRequest`, `PlanRequest`, `RenderRequest`, etc.
 3. **Wrap tools**
    - Import the profiler/renderer modules directly so the orchestrator can call them synchronously.
-   - For remote Ollama, create an `OllamaPlannerTool` that hits `https://ollama-ignite-demo-...azurecontainerapps.io:11434/api/chat`.
+   - For remote Ollama, point the planner tool at the Ollama Gateway base URL (e.g. `https://ollama-ignite-demo-...azurecontainerapps.io`) and call the `/json` endpoint with the DashboardPlan schema.
 4. **Build workflow**
    - Start with sequential execution: profile → plan → render → return artifact path.
    - Add retries (planner JSON validation) and validation steps (schema enforcement) inline.
@@ -68,8 +68,10 @@
 
 2. **Run the upload → plan workflow locally**
 
+   > When Ollama isn’t available, either set `ORCH_PLANNER_MODE=mock` to load the bundled sample plan or add `--skip-plan` to run profiling only.
+
    ```powershell
-   python -m agent_orchestrator.cli ..\CsvProfilerAgent\samples\retail_superstore_sample.csv --output-dir .\artifacts
+   ORCH_PLANNER_MODE=mock python -m agent_orchestrator.cli ..\CsvProfilerAgent\samples\retail_superstore_sample.csv --output-dir .\artifacts --skip-plan
    ```
 
    This will profile the sample CSV using the local profiler module, call the remote Ollama planner, and emit `artifacts/profile.json` and `artifacts/plan.json`.

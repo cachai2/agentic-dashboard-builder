@@ -14,7 +14,7 @@ class WorkflowResult:
     """Output of the upload → plan workflow."""
 
     profile: Dict[str, Any]
-    plan: Dict[str, Any]
+    plan: Optional[Dict[str, Any]] = None
 
 
 class UploadToDashboardWorkflow:
@@ -27,11 +27,14 @@ class UploadToDashboardWorkflow:
         dataset_name: Optional[str] = None,
         session_id: Optional[str] = None,
         max_rows: Optional[int] = None,
+        skip_planner: bool = False,
     ) -> WorkflowResult:
         profile = profile_dataset(
             csv_path=str(csv_path),
             dataset_name=dataset_name,
             max_rows=max_rows,
         )
-        plan = generate_dashboard_plan(profile_summary=profile, session_id=session_id)
+        plan = None
+        if not skip_planner:
+            plan = generate_dashboard_plan(profile_summary=profile, session_id=session_id)
         return WorkflowResult(profile=profile, plan=plan)

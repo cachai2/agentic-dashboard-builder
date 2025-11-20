@@ -18,7 +18,7 @@
       "value": "${AZURE_CONTAINER_REGISTRY_ENDPOINT}"
     },
     "ollamaModelStorageName": {
-      "value": "ollama-model-storage"
+      "value": "${OLLAMA_MODEL_STORAGE_NAME}"
     }
   }
 }

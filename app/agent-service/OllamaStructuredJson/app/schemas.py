@@ -2,33 +2,52 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
-
-
-class PlanRequest(BaseModel):
-    profile_summary: Dict[str, Any] = Field(..., description="Structured output from the profiling agent.")
-    prompt_version: str = Field(default="v1", description="Identifier for the system prompt template used.")
-    session_id: Optional[str] = Field(default=None, description="Correlation id shared across the orchestrator.")
-
-
-class PlanMetadata(BaseModel):
-    prompt_version: str
-    model: str
-    round_trips: int = Field(default=1, description="Number of attempts made before producing a valid plan.")
-    duration_ms: float
-    prompt_hash: str
-    requested_at: datetime
-
-
-class PlanResponse(BaseModel):
-    plan: Dict[str, Any]
-    metadata: PlanMetadata
 
 
 class HealthResponse(BaseModel):
     status: str = "ok"
     mode: str
     model: str
+
+
+class ChatMessage(BaseModel):
+    role: Literal["system", "user", "assistant", "tool"]
+    content: str
+
+
+class JsonChatRequest(BaseModel):
+    messages: List[ChatMessage] = Field(..., min_length=1)
+    schema: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional JSON schema passed to the Ollama format parameter.",
+    )
+    model: Optional[str] = Field(default=None, description="Override the default Ollama model.")
+    temperature: float = Field(default=0.1, ge=0.0, le=1.0)
+    stream: bool = Field(default=False, description="Forward streaming responses (currently always false).")
+
+
+class JsonChatResponse(BaseModel):
+    content: Dict[str, Any]
+    raw: str
+    model: str
+    provider_response: Dict[str, Any]
+
+
+class GeneralChatRequest(BaseModel):
+    messages: List[ChatMessage] = Field(..., min_length=1)
+    model: Optional[str] = None
+    format: Optional[Union[str, Dict[str, Any]]] = Field(
+        default=None,
+        description="Optional Ollama format payload (string or JSON schema).",
+    )
+    temperature: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    stream: bool = False
+
+
+class GeneralChatResponse(BaseModel):
+    content: str
+    model: str
+    provider_response: Dict[str, Any]

@@ -7,6 +7,9 @@
 *.py[cod]
 *.pyo
 *.pyd
+**/*.pyc
+**/*.pyo
+**/*.pyd
 *.log
 *.swp
 *.code-workspace
@@ -23,10 +26,16 @@ env/
 
 # Local artifacts
 artifacts/
+**/artifacts/
 **/output/
 **/build/
 **/dist/
 **/.DS_Store
+
+# Samples, docs, tests
+**/samples/
+**/docs/
+**/tests/
 
 # Node modules
 node_modules/

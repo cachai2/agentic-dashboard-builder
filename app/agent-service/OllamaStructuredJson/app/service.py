@@ -1,28 +1,28 @@
-"""FastAPI application that wraps the Ollama planner workflow."""
+"""FastAPI application that fronts Ollama with simple JSON/general endpoints."""
 
 from __future__ import annotations
 
-import re
-from datetime import datetime, timezone
-from time import perf_counter
-from typing import Dict
+import json
+from typing import Dict, List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from .builder import compute_prompt_hash, render_prompt
 from .client import OllamaClient
 from .config import get_settings
-from .schemas import HealthResponse, PlanMetadata, PlanRequest, PlanResponse
-from .validator import PlanValidator
+from .schemas import (
+    ChatMessage,
+    GeneralChatRequest,
+    GeneralChatResponse,
+    HealthResponse,
+    JsonChatRequest,
+    JsonChatResponse,
+)
 
 settings = get_settings()
 client = OllamaClient(settings)
-validator = PlanValidator(settings)
 
-_MAX_INVALID_SNIPPET_CHARS = 4000
-
-app = FastAPI(title="Ollama Structured JSON Agent", version="0.1.0")
+app = FastAPI(title="Ollama Gateway", version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,68 +37,36 @@ def health() -> HealthResponse:
     return HealthResponse(status="ok", mode=settings.ollama_mode, model=settings.ollama_model)
 
 
-@app.post("/plan", response_model=PlanResponse)
-def plan(request: PlanRequest) -> PlanResponse:
-    prompt_bundle = render_prompt(request.profile_summary, request.prompt_version)
-    base_user_prompt = prompt_bundle["user"]
-    start = perf_counter()
-    attempts = 0
-    last_error: Exception | None = None
-
-    for attempt in range(2):
-        attempts = attempt + 1
-        raw_response = ""
-        try:
-            raw_response = client.generate_plan_text(prompt_bundle, validator.schema)
-            plan = validator.parse_and_validate(raw_response)
-            metadata = PlanMetadata(
-                prompt_version=request.prompt_version,
-                model=settings.ollama_model,
-                round_trips=attempts,
-                duration_ms=(perf_counter() - start) * 1000,
-                prompt_hash=prompt_bundle["prompt_hash"],
-                requested_at=datetime.now(timezone.utc),
-            )
-            return PlanResponse(plan=plan, metadata=metadata)
-        except Exception as exc:  # broad catch to surface error detail upstream
-            last_error = exc
-            if attempt == 0:
-                prompt_bundle["user"] = _build_retry_user_prompt(
-                    base_user_prompt,
-                    raw_response,
-                    str(exc),
-                )
-                prompt_bundle["prompt_hash"] = compute_prompt_hash(
-                    prompt_bundle["system"],
-                    prompt_bundle["user"],
-                    prompt_bundle["prompt_version"],
-                )
-
-    raise HTTPException(status_code=502, detail=str(last_error))
-
-
-def _build_retry_user_prompt(base_prompt: str, invalid_output: str, failure_reason: str) -> str:
-    snippet = (invalid_output or "").strip()
-    if not snippet:
-        snippet = "<empty response>"
-    if len(snippet) > _MAX_INVALID_SNIPPET_CHARS:
-        snippet = f"{snippet[:_MAX_INVALID_SNIPPET_CHARS]}\n...truncated..."
-
-    reason = _compress_whitespace(failure_reason) or "unknown error"
-    if len(reason) > 300:
-        reason = f"{reason[:300]}..."
-
-    instructions = (
-        "\n\nThe previous response failed because it did not produce valid DashboardPlan JSON ("
-        f"{reason}). Carefully fix the invalid output shown between <BEGIN_INVALID_OUTPUT> and "
-        "<END_INVALID_OUTPUT> so it matches the schema exactly. Respond with ONLY the corrected JSON "
-        "object — no commentary or markdown.\n"
-        "<BEGIN_INVALID_OUTPUT>\n"
-        f"{snippet}\n"
-        "<END_INVALID_OUTPUT>\n"
+@app.post("/json", response_model=JsonChatResponse)
+def json_chat(request: JsonChatRequest) -> JsonChatResponse:
+    format_payload = request.schema or "json"
+    response = client.chat(
+        messages=_messages_to_payload(request.messages),
+        format_payload=format_payload,
+        model=request.model,
+        stream=request.stream,
+        temperature=request.temperature,
     )
-    return base_prompt + instructions
+    raw = client.extract_message_text(response)
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as exc:  # pragma: no cover - only triggered on invalid LLM output
+        raise HTTPException(status_code=502, detail=f"Model returned invalid JSON: {exc}") from exc
+    return JsonChatResponse(content=parsed, raw=raw, model=response.get("model", settings.ollama_model), provider_response=response)
 
 
-def _compress_whitespace(value: str) -> str:
-    return re.sub(r"\s+", " ", value).strip()
+@app.post("/general", response_model=GeneralChatResponse)
+def general_chat(request: GeneralChatRequest) -> GeneralChatResponse:
+    response = client.chat(
+        messages=_messages_to_payload(request.messages),
+        format_payload=request.format,
+        model=request.model,
+        stream=request.stream,
+        temperature=request.temperature,
+    )
+    content = client.extract_message_text(response)
+    return GeneralChatResponse(content=content, model=response.get("model", settings.ollama_model), provider_response=response)
+
+
+def _messages_to_payload(messages: List[ChatMessage]) -> List[Dict[str, str]]:
+    return [message.model_dump() for message in messages]

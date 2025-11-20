@@ -1,9 +1,11 @@
-"""Tool that calls the structured JSON planner directly via the Ollama client."""
+"""Tool that calls the shared Ollama gateway's JSON endpoint to obtain plans."""
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime, timezone
+from pathlib import Path
 from time import perf_counter
 from typing import Any, Dict, Optional
 
@@ -18,8 +20,9 @@ except ImportError:  # pragma: no cover
 
         return decorator
 
+import httpx
+
 from Playground.OllamaStructuredJson.app.builder import compute_prompt_hash, render_prompt
-from Playground.OllamaStructuredJson.app.client import OllamaClient
 from Playground.OllamaStructuredJson.app.config import Settings as PlannerSettings
 from Playground.OllamaStructuredJson.app.validator import PlanValidator
 
@@ -61,16 +64,21 @@ class StructuredPlanner:
     def __init__(self) -> None:
         settings = get_settings()
         planner_settings = PlannerSettings(
-            ollama_mode="remote",
-            ollama_host=str(settings.ollama_host),
-            ollama_model=settings.ollama_model,
-            ollama_timeout_seconds=settings.ollama_timeout_seconds,
-            schema_path=settings.plan_schema_path,
+            OLLAMA_MODE="remote",
+            OLLAMA_HOST=str(settings.ollama_host),
+            OLLAMA_MODEL=settings.ollama_model,
+            OLLAMA_TIMEOUT_SECONDS=settings.ollama_timeout_seconds,
+            PLAN_SCHEMA_PATH=settings.plan_schema_path,
         )
         self._prompt_version = settings.prompt_version
-        self._client = OllamaClient(planner_settings)
+        self._planner_mode = settings.planner_mode
+        self._gateway_url = str(settings.ollama_host).rstrip("/")
+        self._http_client = httpx.Client(timeout=settings.ollama_timeout_seconds)
         self._validator = PlanValidator(planner_settings)
         self._model_name = planner_settings.ollama_model
+        self._mock_plan_path = (
+            Path(__file__).resolve().parents[3].parent / "OllamaStructuredJson" / "samples" / "mock_plan.json"
+        )
 
     def generate(self, profile_summary: Dict[str, Any], session_id: Optional[str]) -> Dict[str, Any]:
         prompt_bundle = render_prompt(profile_summary, prompt_version=self._prompt_version)
@@ -79,29 +87,16 @@ class StructuredPlanner:
         last_error: Exception | None = None
         raw_response = ""
 
+        if self._planner_mode == "mock":
+            raw_response = self._mock_plan_path.read_text(encoding="utf-8")
+            plan = self._validator.parse_and_validate(raw_response)
+            return self._build_success(plan, raw_response, 1, start, prompt_bundle, session_id)
+
         for attempt in range(2):
             try:
-                raw_response = self._client.generate_plan_text(prompt_bundle, self._validator.schema)
+                raw_response = self._invoke_gateway(prompt_bundle, session_id)
                 plan = self._validator.parse_and_validate(raw_response)
-                duration = (perf_counter() - start) * 1000
-                metadata = {
-                    "prompt_version": self._prompt_version,
-                    "model": self._model_name,
-                    "round_trips": attempt + 1,
-                    "duration_ms": duration,
-                    "prompt_hash": prompt_bundle["prompt_hash"],
-                    "requested_at": datetime.now(timezone.utc).isoformat(),
-                    "session_id": session_id,
-                }
-                logger.info(
-                    "Generated dashboard plan",
-                    extra={
-                        "duration_ms": round(duration, 2),
-                        "round_trips": attempt + 1,
-                        "model": self._model_name,
-                    },
-                )
-                return {"plan": plan, "metadata": metadata, "raw_response": raw_response}
+                return self._build_success(plan, raw_response, attempt + 1, start, prompt_bundle, session_id)
             except Exception as exc:  # pragma: no cover - relies on live service
                 last_error = exc
                 logger.warning("Planner attempt failed", exc_info=exc)
@@ -114,6 +109,59 @@ class StructuredPlanner:
                 raise
 
         raise RuntimeError("Planner failed unexpectedly") from last_error
+
+    def _invoke_gateway(self, prompt_bundle: Dict[str, str], session_id: Optional[str]) -> str:
+        payload = {
+            "messages": [
+                {"role": "system", "content": prompt_bundle["system"]},
+                {"role": "user", "content": prompt_bundle["user"]},
+            ],
+            "schema": self._validator.schema,
+            "model": self._model_name,
+            "temperature": 0.1,
+            "stream": False,
+        }
+        headers = {"Content-Type": "application/json"}
+        if session_id:
+            headers["X-Session-ID"] = session_id
+        response = self._http_client.post(f"{self._gateway_url}/json", json=payload, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        raw = data.get("raw")
+        if not raw and "content" in data:
+            raw = json.dumps(data["content"])
+        if not raw:
+            raise RuntimeError("Gateway response missing content")
+        return raw
+
+    def _build_success(
+        self,
+        plan: Dict[str, Any],
+        raw_response: str,
+        attempts: int,
+        start: float,
+        prompt_bundle: Dict[str, Any],
+        session_id: Optional[str],
+    ) -> Dict[str, Any]:
+        duration = (perf_counter() - start) * 1000
+        metadata = {
+            "prompt_version": self._prompt_version,
+            "model": self._model_name,
+            "round_trips": attempts,
+            "duration_ms": duration,
+            "prompt_hash": prompt_bundle["prompt_hash"],
+            "requested_at": datetime.now(timezone.utc).isoformat(),
+            "session_id": session_id,
+        }
+        logger.info(
+            "Generated dashboard plan",
+            extra={
+                "duration_ms": round(duration, 2),
+                "round_trips": attempts,
+                "model": self._model_name,
+            },
+        )
+        return {"plan": plan, "metadata": metadata, "raw_response": raw_response}
 
 
 _PLANNER_INSTANCE: StructuredPlanner | None = None

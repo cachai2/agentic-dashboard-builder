@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 import httpx
 
@@ -29,33 +29,52 @@ class OllamaClient:
         if mode == "mock":
             return self._load_mock_plan()
         schema_payload = response_schema if self.settings.ollama_send_json_schema else None
-        return self._call_remote(payload, schema_payload)
+        response = self.chat(
+            messages=[
+                {"role": "system", "content": payload["system"]},
+                {"role": "user", "content": payload["user"]},
+            ],
+            format_payload=schema_payload,
+        )
+        return self.extract_message_text(response)
+
+    def chat(
+        self,
+        messages: List[Dict[str, str]],
+        *,
+        format_payload: Optional[Dict[str, Any] | str] = None,
+        model: Optional[str] = None,
+        stream: bool = False,
+        temperature: Optional[float] = None,
+        extra_options: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        client = self._ensure_client()
+        body: Dict[str, Any] = {
+            "model": model or self.settings.ollama_model,
+            "messages": messages,
+            "stream": stream,
+        }
+        options = extra_options.copy() if extra_options else {}
+        if temperature is not None:
+            options.setdefault("temperature", temperature)
+        if options:
+            body["options"] = options
+        if format_payload is not None:
+            body["format"] = format_payload
+        response = client.post(f"{self.settings.ollama_host}/api/chat", json=body)
+        response.raise_for_status()
+        return response.json()
 
     def _load_mock_plan(self) -> str:
         mock_path = PROJECT_ROOT / "samples" / "mock_plan.json"
         return mock_path.read_text(encoding="utf-8")
 
-    def _call_remote(self, prompts: Dict[str, str], response_schema: Dict[str, Any] | None = None) -> str:
-        client = self._ensure_client()
-        body = {
-            "model": self.settings.ollama_model,
-            "messages": [
-                {"role": "system", "content": prompts["system"]},
-                {"role": "user", "content": prompts["user"]},
-            ],
-            "stream": False,
-        }
-        if response_schema:
-            body["format"] = response_schema
-        elif self.settings.ollama_force_json_mode:
-            body["format"] = "json"
-        response = client.post(f"{self.settings.ollama_host}/api/chat", json=body)
-        response.raise_for_status()
-        data = response.json()
+    @staticmethod
+    def extract_message_text(data: Dict[str, Any]) -> str:
         if "message" in data and data["message"].get("content"):
             return data["message"]["content"]
-        if "choices" in data:
-            return data["choices"][0]["message"]["content"]
+        if "choices" in data and data["choices"]:
+            return data["choices"][0]["message"].get("content", "")
         raise RuntimeError("Ollama response missing content")
 
     def close(self) -> None:

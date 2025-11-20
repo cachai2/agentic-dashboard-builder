@@ -36,6 +36,7 @@ var identityName = 'id-${baseName}'
 var containerAppsEnvironmentName = 'cae-${baseName}'
 var ollamaAppName = 'ollama-${baseName}'
 var agentAppName = 'agent-${baseName}'
+var frontendAppName = 'frontend-${baseName}'
 var nginxAuthProxyAppName = 'proxy-${baseName}'
 var logAnalyticsWorkspaceName = 'log-${baseName}'
 var storagePrivateLinkFqdn = '${storageAccountName}.privatelink.file.${environment().suffixes.storage}'
@@ -543,6 +544,55 @@ resource agentApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
   }
 }
 
+resource frontendApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
+  name: frontendAppName
+  location: location
+  tags: {'azd-service-name': 'frontend'}
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
+  }
+  dependsOn: [
+    seedImages
+  ]
+  properties: {
+    environmentId: containerAppsEnvironment.id
+    workloadProfileName: 'Consumption'
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 80
+        transport: 'Auto'
+        allowInsecure: false
+      }
+      registries: [
+        {
+          server: containerRegistry.properties.loginServer
+          identity: userAssignedIdentity.id
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'frontend'
+          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          resources: {
+            cpu: 1
+            memory: '2Gi'
+          }
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
+    }
+  }
+}
+
 
 resource nginxAuthProxyApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
   name: nginxAuthProxyAppName
@@ -624,6 +674,7 @@ output AZURE_CONTAINER_APPS_ENVIRONMENT_ID string = containerAppsEnvironment.id
 output AZURE_CONTAINER_APPS_ENVIRONMENT_NAME string = containerAppsEnvironment.name
 output ACA_ENVIRONMENT_IDENTITY_ID string = userAssignedIdentity.id
 output agent_APP_NAME string = agentApp.name
+output FRONTEND_APP_NAME string = frontendApp.name
 output OLLAMA_APP_NAME string = ollamaAppName
 output NGINX_AUTH_PROXY_APP_NAME string = nginxAuthProxyApp.name
 output LOG_ANALYTICS_WORKSPACE_ID string = enableDebugging ? logAnalyticsWorkspace.id : ''
@@ -632,4 +683,5 @@ output USER_ASSIGNED_IDENTITY object = userAssignedIdentity
 output CONTAINER_REGISTRY object = containerRegistry
 output CONTAINER_APPS_ENVIRONMENT object = containerAppsEnvironment
 output OLLAMA_MODEL_STORAGE object = enableVnetIntegration ? ollamaModelStorage : {}
+output OLLAMA_MODEL_STORAGE_NAME string = ollamaModelSmbStorage.name
 output SEED_IMAGES object = seedImages

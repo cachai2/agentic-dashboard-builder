@@ -5,19 +5,22 @@ services:
     language: js
     host: containerapp
     docker:
-      path: ./app/frontend_service/Dockerfile
+      path: ./app/frontend-service/Dockerfile
+      context: ./app/frontend-service
   agent:
     project: .
     language: python
     host: containerapp
     docker:
       path: ./app/Dockerfile.cpu
+      context: .
   ollama:
     project: .
     language: python
     host: containerapp
     docker:
-      path: ./app/ollama_service/Dockerfile
+      path: ./app/ollama-service/Dockerfile
+      context: ./app/ollama-service
 infra:
   provider: bicep
   path: infra

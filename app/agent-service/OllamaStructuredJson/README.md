@@ -2,7 +2,10 @@
 
 ## Objective
 
-Isolate the GPU-side logic responsible for calling Ollama (or a drop-in SLM) and guaranteeing valid `DashboardPlan` JSON responses. This agent should accept profiling summaries, craft prompts, call the local Ollama server, and enforce schema compliance before handing results to the orchestrator.
+Provide a thin HTTP gateway in front of Ollama (or any drop-in SLM) that can guarantee JSON outputs when needed and expose a general chat surface for everything else. The service now offers:
+
+- `POST /json` – callers send arbitrary chat messages plus an optional JSON schema; the gateway enforces JSON-only replies (schema-backed when provided) and returns parsed objects.
+- `POST /general` – lightweight chat proxy for non-JSON interactions; useful for experimentation or tool outputs that want free-form text.
 
 ## Deliverables
 
@@ -31,7 +34,8 @@ Playground/OllamaStructuredJson/
 
 ## Integration Guidance
 
-- Keep the HTTP surface compatible with the future ACA GPU container: `POST /plan` accepting `{ profile_summary, prompt_version }` and returning `{ plan, metadata }`.
+- Normalize all agent calls through this service instead of hitting Ollama directly. Use `/json` for structured tool outputs (e.g., dashboard plans, tool payloads) and `/general` for conversational flows. `/plan` remains for backward compatibility.
+- Keep the HTTP surface compatible with the future ACA GPU container: `/json` and `/general` should behave identically whether running locally or in ACA.
 - When adding new chart operations or metadata fields, update `schemas/dashboard_plan.schema.json` and ping the Rendering + Frontend agents.
 - Store large model artifacts outside the repo (use Azure Files or Blob). For local dev, document how to run `ollama pull gpt-oss:20b` in this folder.
 - Use environment variables (`OLLAMA_HOST`, `OLLAMA_MODEL`, `PLAN_SCHEMA_PATH`) instead of hardcoded values so azd can inject settings later.

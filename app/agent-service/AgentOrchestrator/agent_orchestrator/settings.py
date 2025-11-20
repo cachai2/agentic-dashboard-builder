@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import Field, HttpUrl
 from pydantic_settings import BaseSettings
@@ -35,6 +35,10 @@ class OrchestratorSettings(BaseSettings):
     plan_schema_path: Path = Field(
         default_factory=lambda: Path(__file__).resolve().parents[3] / "schemas" / "dashboard_plan.schema.json",
         description="Path to the DashboardPlan JSON schema for validation.",
+    )
+    planner_mode: Literal["remote", "mock"] = Field(
+        default="remote",
+        description="Switch between calling the remote Ollama service or using the mock plan sample.",
     )
 
     class Config:

@@ -33,6 +33,11 @@ def run_cli(argv: Optional[list[str]] = None) -> None:
         type=Path,
         help="Directory where profile.json and plan.json should be written.",
     )
+    parser.add_argument(
+        "--skip-plan",
+        action="store_true",
+        help="Skip the planner step. Useful when testing profiling logic without Ollama.",
+    )
     args = parser.parse_args(argv)
 
     csv_path = Path(args.csv).expanduser().resolve()
@@ -42,16 +47,21 @@ def run_cli(argv: Optional[list[str]] = None) -> None:
         dataset_name=args.dataset_name,
         session_id=args.session_id,
         max_rows=args.max_rows,
+        skip_planner=args.skip_plan,
     )
 
     print("Dataset Profile Summary (truncated):")
     print(json.dumps({"dataset_name": result.profile.get("dataset_name"), "columns": len(result.profile.get("columns", []))}, indent=2))
-    print("\nPlanner Metadata:")
-    print(json.dumps(result.plan.get("metadata", {}), indent=2))
+    if result.plan:
+        print("\nPlanner Metadata:")
+        print(json.dumps(result.plan.get("metadata", {}), indent=2))
+    elif args.skip_plan:
+        print("\nPlanner step skipped (--skip-plan).")
 
     if args.output_dir:
         _write_json(result.profile, args.output_dir / "profile.json")
-        _write_json(result.plan, args.output_dir / "plan.json")
+        if result.plan:
+            _write_json(result.plan, args.output_dir / "plan.json")
         print(f"\nArtifacts written to {args.output_dir}")
 
 

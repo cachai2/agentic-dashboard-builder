@@ -1,0 +1,27 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Environments
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Build artifacts
+artifacts/
+**/artifacts/
+**/output/
+**/build/
+**/dist/
+
+# Samples and docs
+**/samples/
+**/docs/
+
+# Logs and misc
+*.log
+node_modules/
