@@ -28,4 +28,3 @@ def test_telco_profile_emits_annotations() -> None:
 
     drivers = annotations.get("driver_candidates")
     assert drivers, "Driver candidates help planners pick comparisons"
-```}
