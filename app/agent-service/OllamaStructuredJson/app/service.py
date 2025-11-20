@@ -39,33 +39,38 @@ def health() -> HealthResponse:
 
 @app.post("/json", response_model=JsonChatResponse)
 def json_chat(request: JsonChatRequest) -> JsonChatResponse:
-    format_payload = request.schema or "json"
-    response = client.chat(
-        messages=_messages_to_payload(request.messages),
-        format_payload=format_payload,
-        model=request.model,
-        stream=request.stream,
-        temperature=request.temperature,
-    )
-    raw = client.extract_message_text(response)
     try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError as exc:  # pragma: no cover - only triggered on invalid LLM output
+        parsed, raw, provider_response = client.chat_json(
+            messages=_messages_to_payload(request.messages),
+            schema=request.response_schema,
+            model=request.model,
+            stream=request.stream,
+            temperature=request.temperature,
+        )
+    except json.JSONDecodeError as exc:  # pragma: no cover
         raise HTTPException(status_code=502, detail=f"Model returned invalid JSON: {exc}") from exc
-    return JsonChatResponse(content=parsed, raw=raw, model=response.get("model", settings.ollama_model), provider_response=response)
+    return JsonChatResponse(
+        content=parsed,
+        raw=raw,
+        model=provider_response.get("model", settings.ollama_model),
+        provider_response=provider_response,
+    )
 
 
 @app.post("/general", response_model=GeneralChatResponse)
 def general_chat(request: GeneralChatRequest) -> GeneralChatResponse:
-    response = client.chat(
+    content, provider_response = client.chat_general(
         messages=_messages_to_payload(request.messages),
         format_payload=request.format,
         model=request.model,
         stream=request.stream,
         temperature=request.temperature,
     )
-    content = client.extract_message_text(response)
-    return GeneralChatResponse(content=content, model=response.get("model", settings.ollama_model), provider_response=response)
+    return GeneralChatResponse(
+        content=content,
+        model=provider_response.get("model", settings.ollama_model),
+        provider_response=provider_response,
+    )
 
 
 def _messages_to_payload(messages: List[ChatMessage]) -> List[Dict[str, str]]:

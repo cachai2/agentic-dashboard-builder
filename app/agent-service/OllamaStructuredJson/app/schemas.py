@@ -20,8 +20,10 @@ class ChatMessage(BaseModel):
 
 class JsonChatRequest(BaseModel):
     messages: List[ChatMessage] = Field(..., min_length=1)
-    schema: Optional[Dict[str, Any]] = Field(
+    response_schema: Optional[Dict[str, Any]] = Field(
         default=None,
+        alias="schema",
+        serialization_alias="schema",
         description="Optional JSON schema passed to the Ollama format parameter.",
     )
     model: Optional[str] = Field(default=None, description="Override the default Ollama model.")

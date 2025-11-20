@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 
@@ -68,6 +69,45 @@ class OllamaClient:
     def _load_mock_plan(self) -> str:
         mock_path = PROJECT_ROOT / "samples" / "mock_plan.json"
         return mock_path.read_text(encoding="utf-8")
+
+    def chat_json(
+        self,
+        messages: List[Dict[str, str]],
+        *,
+        schema: Optional[Dict[str, Any]] = None,
+        model: Optional[str] = None,
+        temperature: float = 0.1,
+        stream: bool = False,
+    ) -> Tuple[Dict[str, Any], str, Dict[str, Any]]:
+        response = self.chat(
+            messages,
+            format_payload=schema or "json",
+            model=model,
+            temperature=temperature,
+            stream=stream,
+        )
+        raw = self.extract_message_text(response)
+        parsed = json.loads(raw)
+        return parsed, raw, response
+
+    def chat_general(
+        self,
+        messages: List[Dict[str, str]],
+        *,
+        format_payload: Optional[Dict[str, Any] | str] = None,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        stream: bool = False,
+    ) -> Tuple[str, Dict[str, Any]]:
+        response = self.chat(
+            messages,
+            format_payload=format_payload,
+            model=model,
+            temperature=temperature,
+            stream=stream,
+        )
+        content = self.extract_message_text(response)
+        return content, response
 
     @staticmethod
     def extract_message_text(data: Dict[str, Any]) -> str:
