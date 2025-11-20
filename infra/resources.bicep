@@ -32,6 +32,8 @@ var sanitizedBase = empty(sanitized) ? 'env' : sanitized
 var containerRegistryName = take('acr${sanitizedBase}${resourceToken}00', 50)
 var storageAccountName = take('st${sanitizedBase}${resourceToken}000', 24)
 var storageAccountSmbName = take('st${sanitizedBase}${resourceToken}100', 24)
+var artifactStorageAccountName = take('st${sanitizedBase}${resourceToken}200', 24)
+var agentArtifactsContainerName = 'agent-artifacts'
 var identityName = 'id-${baseName}'
 var containerAppsEnvironmentName = 'cae-${baseName}'
 var ollamaAppName = 'ollama-${baseName}'
@@ -207,6 +209,34 @@ resource storageAccountSmb 'Microsoft.Storage/storageAccounts@2023-01-01' = {
     supportsHttpsTrafficOnly: false
     allowSharedKeyAccess: true
     allowBlobPublicAccess: false
+  }
+}
+
+resource artifactStorageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
+  name: artifactStorageAccountName
+  location: location
+  sku: {
+    name: 'Standard_LRS'
+  }
+  kind: 'StorageV2'
+  properties: {
+    publicNetworkAccess: 'Enabled'
+    supportsHttpsTrafficOnly: true
+    allowBlobPublicAccess: false
+    minimumTlsVersion: 'TLS1_2'
+  }
+}
+
+resource artifactBlobService 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
+  parent: artifactStorageAccount
+  name: 'default'
+}
+
+resource artifactContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
+  parent: artifactBlobService
+  name: agentArtifactsContainerName
+  properties: {
+    publicAccess: 'None'
   }
 }
 
@@ -452,6 +482,16 @@ resource acrContributorAssignment 'Microsoft.Authorization/roleAssignments@2020-
   }
 }
 
+resource artifactStorageBlobDataContributor 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  scope: artifactStorageAccount
+  name: guid(artifactStorageAccount.id, userAssignedIdentity.name, 'StorageBlobDataContributor')
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
+    principalId: userAssignedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // Deploy ollama app as a separate module
 module ollamaModule './ollama.bicep' = {
   name: 'ollama-deployment'
@@ -685,3 +725,6 @@ output CONTAINER_APPS_ENVIRONMENT object = containerAppsEnvironment
 output OLLAMA_MODEL_STORAGE object = enableVnetIntegration ? ollamaModelStorage : {}
 output OLLAMA_MODEL_STORAGE_NAME string = ollamaModelSmbStorage.name
 output SEED_IMAGES object = seedImages
+output AGENT_STORAGE_ACCOUNT_NAME string = artifactStorageAccount.name
+output AGENT_STORAGE_CONTAINER_NAME string = agentArtifactsContainerName
+output AGENT_STORAGE_CONNECTION_STRING string = format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', artifactStorageAccount.name, listKeys(artifactStorageAccount.id, '2023-01-01').keys[0].value, environment().suffixes.storage)

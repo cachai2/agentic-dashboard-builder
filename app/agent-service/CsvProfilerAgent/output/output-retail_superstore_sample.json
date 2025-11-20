@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-11-19T19:58:03Z",
+  "timestamp": "2025-11-20T09:04:23Z",
   "dataset": "samples/retail_superstore_sample.csv",
   "profile": {
     "dataset_name": "retail_superstore_sample",
@@ -7,7 +7,7 @@
     "sampled_row_count": 10000,
     "sampling_ratio": 1.0,
     "column_count": 18,
-    "generated_at": "2025-11-19T19:58:03.298328Z",
+    "generated_at": "2025-11-20T09:04:23.763779Z",
     "columns": [
       {
         "name": "Order ID",
