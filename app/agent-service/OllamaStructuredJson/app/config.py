@@ -26,7 +26,7 @@ class Settings(BaseSettings):
         description="Base URL (scheme + host) for the Ollama HTTP endpoint when running in remote mode.",
     )
     ollama_api_path: str = Field(
-        default="/api/generate",
+        default="/api/chat",
         validation_alias="OLLAMA_API_PATH",
         description="Endpoint path appended to the Ollama host; use empty string when specifying a fully-qualified URL.",
     )

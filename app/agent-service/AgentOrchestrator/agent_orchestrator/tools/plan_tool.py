@@ -22,9 +22,22 @@ except ImportError:  # pragma: no cover
 
 import httpx
 
-from Playground.OllamaStructuredJson.app.builder import compute_prompt_hash, render_prompt
-from Playground.OllamaStructuredJson.app.config import Settings as PlannerSettings
-from Playground.OllamaStructuredJson.app.validator import PlanValidator
+try:
+    from OllamaStructuredJson.app.builder import compute_prompt_hash, render_prompt
+    from OllamaStructuredJson.app.config import Settings as PlannerSettings
+    from OllamaStructuredJson.app.validator import PlanValidator
+except ModuleNotFoundError:  # pragma: no cover - fallback to the Playground namespace dynamically
+    from importlib import import_module
+
+    _builder_module = import_module("Playground.OllamaStructuredJson.app.builder")
+    compute_prompt_hash = _builder_module.compute_prompt_hash
+    render_prompt = _builder_module.render_prompt
+
+    _config_module = import_module("Playground.OllamaStructuredJson.app.config")
+    PlannerSettings = _config_module.Settings
+
+    _validator_module = import_module("Playground.OllamaStructuredJson.app.validator")
+    PlanValidator = _validator_module.PlanValidator
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +85,7 @@ class StructuredPlanner:
         )
         self._prompt_version = settings.prompt_version
         self._planner_mode = settings.planner_mode
-        self._gateway_url = str(settings.ollama_host).rstrip("/")
+        self._gateway_url = str(settings.planner_gateway_host).rstrip("/")
         self._http_client = httpx.Client(timeout=settings.ollama_timeout_seconds)
         self._validator = PlanValidator(planner_settings)
         self._model_name = planner_settings.ollama_model

@@ -12,8 +12,8 @@ services:
     language: python
     host: containerapp
     docker:
-      path: ./app/Dockerfile.cpu
-      context: .
+      path: ./app/agent-service/Dockerfile
+      context: ./app/agent-service
   ollama:
     project: .
     language: python

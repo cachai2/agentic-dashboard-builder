@@ -161,10 +161,10 @@ class OllamaClient:
                 "stream": stream,
             }
 
+        if format_payload is not None:
+            options.setdefault("format", format_payload)
         if options:
             body["options"] = options
-        if format_payload is not None:
-            body["format"] = format_payload
         return body
 
     @staticmethod

@@ -9,6 +9,19 @@ from pydantic import Field, HttpUrl
 from pydantic_settings import BaseSettings
 
 
+def _default_plan_schema_path() -> Path:
+    repo_root = Path(__file__).resolve().parents[2]
+    candidates = [
+        repo_root / "schemas" / "dashboard_plan.schema.json",
+        repo_root / "CsvProfilerAgent" / "schemas" / "dashboard_plan.schema.json",
+    ]
+    for path in candidates:
+        if path.exists():
+            return path
+    # Fall back to the first candidate even if it does not exist yet so validation can surface the issue plainly.
+    return candidates[0]
+
+
 class OrchestratorSettings(BaseSettings):
     """Environment-driven settings for the orchestrator workflow."""
 
@@ -25,15 +38,19 @@ class OrchestratorSettings(BaseSettings):
         description="Maximum rows to sample when profiling locally. None means full dataset.",
         ge=1,
     )
+    planner_gateway_host: HttpUrl = Field(
+        default="http://127.0.0.1:8000",
+        description="Base URL for the OllamaStructuredJson gateway that exposes the /json endpoint.",
+    )
     ollama_host: HttpUrl = Field(
         default="https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io",
-        description="Base URL for the deployed Ollama endpoint.",
+        description="Base URL for the actual Ollama deployment that serves /api/chat.",
     )
     ollama_model: str = Field(default="llama3.1-8b", description="Model name passed to Ollama.")
     prompt_version: str = Field(default="v1", description="Prompt template identifier.")
     ollama_timeout_seconds: float = Field(default=90.0, ge=5.0, description="HTTP timeout for Ollama calls.")
     plan_schema_path: Path = Field(
-        default_factory=lambda: Path(__file__).resolve().parents[3] / "schemas" / "dashboard_plan.schema.json",
+        default_factory=_default_plan_schema_path,
         description="Path to the DashboardPlan JSON schema for validation.",
     )
     planner_mode: Literal["remote", "mock"] = Field(

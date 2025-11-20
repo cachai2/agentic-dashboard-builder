@@ -19,7 +19,14 @@ except ImportError:  # pragma: no cover
 
         return decorator
 
-from Playground.CsvProfilerAgent.app.profiling import ProfilingOptions, profile_csv_path
+try:
+    from CsvProfilerAgent.app.profiling import ProfilingOptions, profile_csv_path
+except ModuleNotFoundError:  # pragma: no cover - fallback to the Playground namespace dynamically
+    from importlib import import_module
+
+    _profiling_module = import_module("Playground.CsvProfilerAgent.app.profiling")
+    ProfilingOptions = _profiling_module.ProfilingOptions
+    profile_csv_path = _profiling_module.profile_csv_path
 
 logger = logging.getLogger(__name__)
 

@@ -727,4 +727,3 @@ output OLLAMA_MODEL_STORAGE_NAME string = ollamaModelSmbStorage.name
 output SEED_IMAGES object = seedImages
 output AGENT_STORAGE_ACCOUNT_NAME string = artifactStorageAccount.name
 output AGENT_STORAGE_CONTAINER_NAME string = agentArtifactsContainerName
-output AGENT_STORAGE_CONNECTION_STRING string = format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', artifactStorageAccount.name, listKeys(artifactStorageAccount.id, '2023-01-01').keys[0].value, environment().suffixes.storage)
