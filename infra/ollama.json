@@ -75,7 +75,7 @@
               "image": "ghcr.io/simonjj/ollama-model-pull:3102025-1240",
               "args": [
                 "pull",
-                "gpt-oss:20b"
+                "llama3.1-8b"
               ],
               "resources": {
                 "cpu": 2,

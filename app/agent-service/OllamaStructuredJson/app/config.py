@@ -23,10 +23,15 @@ class Settings(BaseSettings):
     ollama_host: str = Field(
         default="http://localhost:11434",
         validation_alias="OLLAMA_HOST",
-        description="Base URL for the Ollama HTTP endpoint when running in remote mode.",
+        description="Base URL (scheme + host) for the Ollama HTTP endpoint when running in remote mode.",
+    )
+    ollama_api_path: str = Field(
+        default="/api/generate",
+        validation_alias="OLLAMA_API_PATH",
+        description="Endpoint path appended to the Ollama host; use empty string when specifying a fully-qualified URL.",
     )
     ollama_model: str = Field(
-        default="gpt-oss:20b",
+        default="llama3.1-8b",
         validation_alias="OLLAMA_MODEL",
         description="Model identifier passed to the Ollama API.",
     )
