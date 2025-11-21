@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import logging
+import sys
 import tempfile
 import uuid
 from dataclasses import dataclass, field
@@ -81,6 +82,7 @@ class _ChartRenderingAdapter:
         self._plan_model = None
         self._available = False
         self._dataset_id = "uploaded_dataset"
+        _bootstrap_chart_rendering_packages()
         self._bootstrap()
 
     @property
@@ -156,6 +158,33 @@ class _ChartRenderingAdapter:
         logger.warning("ChartRenderingAgent package not available; Plotly renderer disabled")
 
 
+def _detect_repo_root() -> Path | None:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "azure.yaml").exists():
+            return parent
+    return None
+
+
+def _bootstrap_chart_rendering_packages() -> None:
+    repo_root = _detect_repo_root()
+    candidates: List[Path] = []
+    if repo_root:
+        candidates.extend(
+            [
+                repo_root / "app" / "agent-service" / "ChartRenderingAgent",
+                repo_root / "ChartRenderingAgent",
+                repo_root / "Playground" / "ChartRenderingAgent",
+            ]
+        )
+    for candidate in candidates:
+        if candidate.exists():
+            path_str = str(candidate)
+            if path_str not in sys.path:
+                sys.path.insert(0, path_str)
+
+
+
 class _ChartRenderingPlanBuilder:
     def __init__(self, dataset_path: Path, *, dataset_id: str) -> None:
         dataset_file = Path(dataset_path).resolve()
@@ -163,6 +192,7 @@ class _ChartRenderingPlanBuilder:
         self._source_dataset = dataset_file
         self._dataset_entry = {"id": dataset_id, "path": str(dataset_file), "format": "csv"}
         self._datasets: List[Dict[str, Any]] = [self._dataset_entry]
+        self._registered_dataset_ids: set[str] = {dataset_id}
         self._sections: List[Dict[str, Any]] = []
         self._bindings: List[SectionBinding] = []
         self._skipped: List[str] = []
@@ -390,6 +420,7 @@ class _ChartRenderingPlanBuilder:
             raise PlanConversionError("scatter charts require 'x' and 'y' columns")
 
         dataset_id = query.get("dataset") or self._dataset_id
+        self._ensure_dataset_registered(dataset_id)
         options = query.get("options") if isinstance(query.get("options"), Mapping) else {}
         tooltip_fields = query.get("tooltip_fields")
         if isinstance(tooltip_fields, list):
@@ -482,6 +513,12 @@ class _ChartRenderingPlanBuilder:
 
         self._inline_artifacts.append(target_path)
         return dataset_id, target_path
+
+    def _ensure_dataset_registered(self, dataset_id: str) -> None:
+        if dataset_id in self._registered_dataset_ids:
+            return
+        self._datasets.append({"id": dataset_id, "path": str(self._source_dataset), "format": "csv"})
+        self._registered_dataset_ids.add(dataset_id)
 
     def _coerce_string(self, value: Any, fallback: str, *, optional: bool = False) -> Optional[str]:
         if value is None:

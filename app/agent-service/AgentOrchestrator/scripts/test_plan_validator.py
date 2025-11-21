@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import sys
 from pathlib import Path
 
 import jsonschema
+import types
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
@@ -19,11 +21,26 @@ for path in (PROJECT_ROOT, AGENT_SERVICE_ROOT, REPO_ROOT, OLLAMA_PROXY_ROOT):
     if path_str not in sys.path:
         sys.path.insert(0, path_str)
 
+
+def _ensure_local_package(name: str, path: Path) -> None:
+    if name in sys.modules:
+        return
+    module = types.ModuleType(name)
+    module.__path__ = [str(path)]  # type: ignore[attr-defined]
+    sys.modules[name] = module
+
+
+_ensure_local_package("ollama_proxy_service", OLLAMA_PROXY_ROOT)
+_ensure_local_package("ollama_proxy_service.app", OLLAMA_PROXY_ROOT / "app")
+
 from agent_orchestrator.tools.plan_tool import StructuredPlanner
+from OllamaStructuredJson.app.config import Settings as PlannerSettings
+from OllamaStructuredJson.app.validator import PlanValidator
 
 _DEFAULT_PLAN = (
-    Path(__file__).resolve().parents[2]
-    / "OllamaStructuredJson"
+    REPO_ROOT
+    / "app"
+    / "ollama-proxy-service"
     / "samples"
     / "mock_plan.json"
 )
@@ -93,7 +110,7 @@ def mutate_chart(plan: dict, *, section_index: int, chart_index: int, mutation: 
 def main() -> None:
     args = parse_args()
     raw = args.plan.read_text(encoding="utf-8")
-    planner = StructuredPlanner()
+    planner = _build_planner_harness()
     plan = planner._validator.parse(raw)
 
     print(f"Loaded plan with {len(plan.get('sections', []))} section(s)")
@@ -125,6 +142,26 @@ def main() -> None:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(salvaged, indent=2), encoding="utf-8")
         print(f"Wrote sanitized plan to {args.output}")
+
+
+def _build_planner_harness() -> StructuredPlanner:
+    schema_candidates = [
+        AGENT_SERVICE_ROOT / "schemas" / "dashboard_plan.schema.json",
+        REPO_ROOT / "schemas" / "dashboard_plan.schema.json",
+        REPO_ROOT.parent / "schemas" / "dashboard_plan.schema.json",
+    ]
+    schema_path = None
+    for candidate in schema_candidates:
+        if candidate.exists():
+            schema_path = candidate
+            break
+    if schema_path is None:
+        raise FileNotFoundError("Unable to locate dashboard_plan.schema.json in common locations")
+
+    planner_settings = PlannerSettings(PLAN_SCHEMA_PATH=schema_path)
+    dummy = StructuredPlanner.__new__(StructuredPlanner)
+    dummy._validator = PlanValidator(planner_settings)  # type: ignore[attr-defined]
+    return dummy
 
 
 if __name__ == "__main__":

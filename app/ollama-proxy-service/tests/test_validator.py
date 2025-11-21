@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from app.validator import PlanValidator
+from ollama_proxy_service.app.validator import PlanValidator
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 

@@ -1,0 +1,20 @@
+[project]
+name = "OllamaStructuredJson"
+version = "0.1.0"
+description = "Legacy structured JSON planner helpers used by local tooling."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "jsonschema>=4.23,<5.0",
+    "orjson>=3.10,<4.0",
+    "pydantic>=2.9,<3.0",
+    "pydantic-settings>=2.4,<3.0",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["OllamaStructuredJson*"]

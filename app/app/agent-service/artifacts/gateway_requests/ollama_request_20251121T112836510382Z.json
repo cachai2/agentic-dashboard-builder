@@ -1,0 +1,171 @@
+{
+  "model": "gemma2:27b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "# System Prompt v1\n\nYou are the dashboard planning agent for the Ignite demo. Your job is to convert structured dataset metadata into a JSON object that matches the DashboardPlan schema. Follow these rules:\n\n1. Only reference columns provided in the profile summary.\n2. Prefer concise titles and insights (<= 120 characters).\n3. Assume the CsvProfilerAgent has already produced the JSON profile you receive; rely exclusively on that structured metadata rather than re-inferring from raw CSVs.\n4. Use the profile signals to choose the most helpful chart operations (timeseries, categorical comparisons, distributions, KPI cards, groupbys, funnels, scatter, etc.) so that downstream chart tools know exactly what to render.\n5. When an `llm_annotations` block is present (kpis, churn segments, retention funnels, loyalty hints, driver candidates), use those curated signals to prioritize KPI tiles, funnel stages, heatmaps, and scatter plots with the exact column mappings they highlight.\n6. Map each chart to the fields and aggregations the chart tools expect (e.g., identify the dataset field, dimensions, metrics, aggregations, filters) so the ChartRenderingAgent can invoke the right tool without guesswork.\n7. Never repeat the same chart type with identical metadata.\n8. Return strictly valid JSON with double quotes and no trailing commas."
+    },
+    {
+      "role": "user",
+      "content": "# User Prompt Template\n\nProfile summary JSON:\n\n```json\n{\"dataset\":{\"row_count\":12500,\"column_count\":12,\"columns\":[{\"name\":\"order_date\",\"dtype\":\"datetime\",\"null_pct\":0.0},{\"name\":\"region\",\"dtype\":\"string\",\"null_pct\":0.01},{\"name\":\"revenue\",\"dtype\":\"float\",\"null_pct\":0.0},{\"name\":\"units\",\"dtype\":\"integer\",\"null_pct\":0.0}]},\"metrics\":{\"total_revenue\":1280000,\"avg_units\":4.3,\"top_regions\":[\"West\",\"Central\",\"East\"]}}\n```\n\nReturn only the JSON body of a DashboardPlan captured under a root object:\n\n```json\n{\n  \"title\": string,\n  \"description\": string,\n  \"sections\": [\n    {\n      \"title\": string,\n      \"charts\": [\n        {\n          \"id\": string,\n          \"type\": string,\n          \"query\": {...},\n          \"insight\": string\n        }\n      ]\n    }\n  ]\n}\n```\n\nIf `llm_annotations` is present inside `profile_summary`, fold it directly into the plan:\n\n- Promote the strongest `kpis` into a KPI grid or headline cards (carry over labels/units).\n- Mirror the `retention_funnel.stages` order for any funnel chart and reference the underlying dataset columns mentioned in each stage definition (PhoneService, InternetService, add-on counts, target label, etc.).\n- Use `loyalty_hint.columns` for scatter plots (MonthlyCharges vs TotalCharges sized by tenure, colored by the detected target) and cite the churn lift metrics in the `insight` text.\n- Turn `segments`/`driver_candidates` into grouped comparisons or heatmaps that emphasize the largest churn deltas across features like Contract, InternetService, TechSupport, and tenure_band.\n\nThe previous response failed because it did not produce valid DashboardPlan JSON ('categorical_bar_chart' is not one of ['line', 'bar', 'stacked_bar', 'area', 'scatter', 'box', 'histogram', 'heatmap', 'table', 'kpi'] Failed validating 'enum' in schema['properties']['sections']['items']['properties']['charts']['items']['properties']['type']: {'type': 'string', 'enum': ['line', 'ba...). Carefully fix the invalid output shown between <BEGIN_INVALID_OUTPUT> and <END_INVALID_OUTPUT> so it matches the schema exactly. Respond with ONLY the corrected JSON object \u2014 no commentary or markdown.\n<BEGIN_INVALID_OUTPUT>\n```json\n{\n  \"title\": \"Ignite Demo Dashboard\",\n  \"description\": \"Exploring revenue trends by region.\",\n  \"sections\": [\n    {\n      \"title\": \"Revenue Performance\",\n      \"charts\": [\n        {\n          \"id\": \"revenue_by_region\",\n          \"type\": \"categorical_bar_chart\",\n          \"query\": {\n            \"dataset\": \"your_dataset_name\",\n            \"dimensions\": [\"region\"],\n            \"metrics\": [\"revenue\"]\n          },\n          \"insight\": \"Total revenue by region. Identify top performing regions.\"\n        }\n      ]\n    }\n  ]\n}\n\n```\n<END_INVALID_OUTPUT>\n"
+    }
+  ],
+  "stream": false,
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "DashboardPlan",
+    "type": "object",
+    "required": [
+      "title",
+      "sections"
+    ],
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "priority": {
+        "type": "string",
+        "enum": [
+          "overview",
+          "deep-dive",
+          "data-quality"
+        ]
+      },
+      "sections": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "title",
+            "charts"
+          ],
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "charts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "query"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "insight": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "line",
+                      "bar",
+                      "stacked_bar",
+                      "area",
+                      "scatter",
+                      "box",
+                      "histogram",
+                      "heatmap",
+                      "table",
+                      "kpi"
+                    ]
+                  },
+                  "query": {
+                    "type": "object",
+                    "required": [
+                      "operation"
+                    ],
+                    "properties": {
+                      "operation": {
+                        "type": "string",
+                        "enum": [
+                          "groupby_agg",
+                          "timeseries_agg",
+                          "topk",
+                          "distribution",
+                          "correlation_matrix",
+                          "outliers"
+                        ]
+                      },
+                      "x": {
+                        "type": "string"
+                      },
+                      "y": {
+                        "type": "string"
+                      },
+                      "group": {
+                        "type": "string"
+                      },
+                      "filters": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "column": {
+                              "type": "string"
+                            },
+                            "op": {
+                              "type": "string",
+                              "enum": [
+                                "=",
+                                "!=",
+                                ">",
+                                "<",
+                                ">=",
+                                "<=",
+                                "in",
+                                "not in"
+                              ]
+                            },
+                            "value": {}
+                          }
+                        }
+                      },
+                      "agg": {
+                        "type": "string",
+                        "enum": [
+                          "sum",
+                          "avg",
+                          "count",
+                          "min",
+                          "max",
+                          "median"
+                        ]
+                      },
+                      "top_k": {
+                        "type": "integer"
+                      },
+                      "time_grain": {
+                        "type": "string",
+                        "enum": [
+                          "day",
+                          "week",
+                          "month",
+                          "quarter",
+                          "year"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

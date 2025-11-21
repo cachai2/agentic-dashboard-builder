@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: OllamaStructuredJson
+Version: 0.1.0
+Summary: Legacy structured JSON planner helpers used by local tooling.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: jsonschema<5.0,>=4.23
+Requires-Dist: orjson<4.0,>=3.10
+Requires-Dist: pydantic<3.0,>=2.9
+Requires-Dist: pydantic-settings<3.0,>=2.4

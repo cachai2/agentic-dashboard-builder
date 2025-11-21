@@ -1,0 +1,9 @@
+pyproject.toml
+OllamaStructuredJson/__init__.py
+OllamaStructuredJson.egg-info/PKG-INFO
+OllamaStructuredJson.egg-info/SOURCES.txt
+OllamaStructuredJson.egg-info/dependency_links.txt
+OllamaStructuredJson.egg-info/requires.txt
+OllamaStructuredJson.egg-info/top_level.txt
+OllamaStructuredJson/app/config.py
+OllamaStructuredJson/app/validator.py

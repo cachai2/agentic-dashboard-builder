@@ -4,11 +4,11 @@ from pathlib import Path
 
 import pytest
 
-os.environ.setdefault("OLLAMA_MODE", "mock")
+os.environ["OLLAMA_MODE"] = "mock"
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from app.service import app, client  # noqa: E402
+from ollama_proxy_service.app.service import app, client  # noqa: E402
 
 SAMPLES = Path(__file__).resolve().parent.parent / "samples"
 

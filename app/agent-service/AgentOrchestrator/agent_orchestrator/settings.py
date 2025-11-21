@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from pydantic import Field, HttpUrl
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def _default_plan_schema_path() -> Path:
@@ -28,6 +28,13 @@ def _default_planner_dump_dir() -> Path:
 
 class OrchestratorSettings(BaseSettings):
     """Environment-driven settings for the orchestrator workflow."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="ORCH_",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     session_namespace: str = Field(
         default="ignite-demo",
@@ -66,11 +73,6 @@ class OrchestratorSettings(BaseSettings):
         description="Directory where planner-to-gateway payloads are written for debugging.",
     )
 
-    class Config:
-        env_prefix = "ORCH_"
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-
 
 def get_settings() -> OrchestratorSettings:
     """Cached accessor so downstream modules reuse the same settings instance."""
@@ -82,3 +84,11 @@ def get_settings() -> OrchestratorSettings:
     except NameError:
         _SETTINGS_CACHE = OrchestratorSettings()
         return _SETTINGS_CACHE
+
+
+def reset_settings_cache() -> None:
+    """Clear the cached settings instance so tests can reload env overrides."""
+
+    global _SETTINGS_CACHE  # type: ignore
+    if "_SETTINGS_CACHE" in globals():
+        del _SETTINGS_CACHE  # type: ignore

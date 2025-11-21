@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
-PROJECT_ROOT = PACKAGE_ROOT.parent
+PROJECT_ROOT = PACKAGE_ROOT.parent.parent
 REPO_ROOT = PROJECT_ROOT.parent
 
 

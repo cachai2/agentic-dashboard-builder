@@ -1,6 +1,6 @@
 import copy
 
-from app.augmentations import augment_plan
+from ollama_proxy_service.app.augmentations import augment_plan
 
 
 def _base_profile():

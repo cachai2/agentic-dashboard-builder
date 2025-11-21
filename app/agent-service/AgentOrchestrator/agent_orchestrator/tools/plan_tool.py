@@ -9,6 +9,10 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any, Dict, Optional, Type
 
+import importlib.util
+import sys
+import types
+
 import jsonschema
 from ..settings import get_settings
 
@@ -24,8 +28,78 @@ except ImportError:  # pragma: no cover
 import httpx
 
 
+def _detect_repo_root() -> Path | None:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "azure.yaml").exists():
+            return parent
+    return None
+
+
+def _ensure_local_package(module_name: str, directory: Path) -> None:
+    if module_name in sys.modules or not directory.exists():
+        return
+
+    init_file = directory / "__init__.py"
+    if init_file.exists():
+        spec = importlib.util.spec_from_file_location(
+            module_name,
+            init_file,
+            submodule_search_locations=[str(directory)],
+        )
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
+            return
+
+    module = types.ModuleType(module_name)
+    module.__path__ = [str(directory)]  # type: ignore[attr-defined]
+    sys.modules[module_name] = module
+
+
+_PLANNER_BOOTSTRAPPED = False
+
+
+def _bootstrap_repo_planner_packages() -> None:
+    global _PLANNER_BOOTSTRAPPED
+    if _PLANNER_BOOTSTRAPPED:
+        return
+
+    repo_root = _detect_repo_root()
+    if not repo_root:
+        return
+
+    registrations = [
+        ("ollama_proxy_service", repo_root / "app" / "ollama-proxy-service" / "ollama_proxy_service"),
+        (
+            "ollama_proxy_service.app",
+            repo_root / "app" / "ollama-proxy-service" / "ollama_proxy_service" / "app",
+        ),
+        (
+            "OllamaStructuredJson",
+            repo_root / "app" / "agent-service" / "OllamaStructuredJson" / "OllamaStructuredJson",
+        ),
+        (
+            "OllamaStructuredJson.app",
+            repo_root
+            / "app"
+            / "agent-service"
+            / "OllamaStructuredJson"
+            / "OllamaStructuredJson"
+            / "app",
+        ),
+    ]
+    for module_name, directory in registrations:
+        _ensure_local_package(module_name, directory)
+
+    _PLANNER_BOOTSTRAPPED = True
+
+
 def _load_planner_modules():
     """Resolve planner helpers across the new and legacy package layouts."""
+
+    _bootstrap_repo_planner_packages()
 
     try:
         from ollama_proxy_service.app.augmentations import augment_plan as _augment
@@ -67,8 +141,92 @@ def _load_planner_modules():
 
 
 augment_plan, compute_prompt_hash, render_prompt, PlannerSettings, PlanValidator, GatewayClient = _load_planner_modules()
-
 logger = logging.getLogger(__name__)
+
+
+class _ValidatorFacade:
+    """Compatibility layer across the legacy and proxy planner validators."""
+
+    def __init__(self, validator: Any) -> None:
+        self._validator = validator
+        self._schema = getattr(validator, "schema", None)
+        self._chart_schema = self._extract_chart_schema()
+
+    @property
+    def schema(self) -> Dict[str, Any]:
+        if self._schema is None:
+            raise AttributeError("Planner validator does not expose a schema")
+        return self._schema
+
+    def parse(self, plan_text: str) -> Dict[str, Any]:
+        parse = getattr(self._validator, "parse", None)
+        if callable(parse):
+            return parse(plan_text)
+
+        parse_and_validate = getattr(self._validator, "parse_and_validate", None)
+        if callable(parse_and_validate):
+            return parse_and_validate(plan_text)
+
+        raise AttributeError("Planner validator missing parse() or parse_and_validate()")
+
+    def validate(self, plan: Dict[str, Any]) -> None:
+        validate = getattr(self._validator, "validate", None)
+        if callable(validate):
+            validate(plan)
+            return
+
+        jsonschema.validate(instance=plan, schema=self.schema)
+
+    def filter_invalid_charts(self, plan: Dict[str, Any]) -> None:
+        filter_fn = getattr(self._validator, "filter_invalid_charts", None)
+        if callable(filter_fn):
+            filter_fn(plan)
+            return
+
+        self._fallback_filter(plan)
+
+    def _extract_chart_schema(self) -> Dict[str, Any] | None:
+        if not isinstance(self._schema, dict):
+            return None
+        return (
+            self._schema.get("properties", {})
+            .get("sections", {})
+            .get("items", {})
+            .get("properties", {})
+            .get("charts", {})
+            .get("items")
+        )
+
+    def _fallback_filter(self, plan: Dict[str, Any]) -> None:
+        sections = plan.get("sections")
+        if not isinstance(sections, list):
+            return
+
+        cleaned_sections: list[Dict[str, Any]] = []
+        for section in sections:
+            if not isinstance(section, dict):
+                continue
+            charts = section.get("charts")
+            if not isinstance(charts, list):
+                continue
+            valid_charts = [chart for chart in charts if self._is_valid_chart(chart)]
+            if valid_charts:
+                section["charts"] = valid_charts
+                cleaned_sections.append(section)
+
+        if cleaned_sections:
+            plan["sections"] = cleaned_sections
+
+    def _is_valid_chart(self, chart: Any) -> bool:
+        if not isinstance(chart, dict):
+            return False
+        if self._chart_schema is None:
+            return True
+        try:
+            jsonschema.validate(instance=chart, schema=self._chart_schema)
+        except jsonschema.ValidationError:
+            return False
+        return True
 
 _MAX_INVALID_SNIPPET_CHARS = 2000
 
@@ -116,7 +274,7 @@ class StructuredPlanner:
         self._planner_mode = settings.planner_mode
         self._gateway_url = str(settings.planner_gateway_host).rstrip("/")
         self._http_client = httpx.Client(timeout=settings.ollama_timeout_seconds)
-        self._validator = PlanValidator(planner_settings)
+        self._validator = _ValidatorFacade(PlanValidator(planner_settings))
         self._model_name = planner_settings.ollama_model
         self._mock_plan_path = _resolve_mock_plan_path()
         self._request_dump_dir = settings.planner_request_dump_dir
@@ -353,6 +511,13 @@ def _get_planner() -> StructuredPlanner:
     if _PLANNER_INSTANCE is None:
         _PLANNER_INSTANCE = StructuredPlanner()
     return _PLANNER_INSTANCE
+
+
+def reset_planner_cache() -> None:
+    """Reset the cached StructuredPlanner so tests can pick up new settings."""
+
+    global _PLANNER_INSTANCE
+    _PLANNER_INSTANCE = None
 
 
 @ai_function(
