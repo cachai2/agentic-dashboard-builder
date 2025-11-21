@@ -141,8 +141,6 @@ pip install -r requirements.txt
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-- Upload CSVs: `POST http://localhost:8000/upload`
-- Point to the remote GPU: set `OLLAMA_HOST` and `OLLAMA_MODEL=gemma2:27b`
 
 ### Agent Service (Docker image)
 

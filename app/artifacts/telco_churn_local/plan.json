@@ -1,0 +1,279 @@
+{
+  "plan": {
+    "title": "Telco Churn Analysis",
+    "description": "Dashboard exploring customer churn drivers in a telecommunications dataset.",
+    "sections": [
+      {
+        "id": "auto-kpi-2",
+        "title": "Customer Snapshot",
+        "charts": [
+          {
+            "id": "auto-kpi-chart-1",
+            "type": "kpi",
+            "title": "Customer Snapshot",
+            "insight": "Key customer health metrics derived from deterministic profiling signals.",
+            "query": {
+              "operation": "kpi",
+              "layout": "grid",
+              "cards": [
+                {
+                  "title": "Active Customers",
+                  "value": 5000.0,
+                  "unit": null,
+                  "trend": [],
+                  "trend_label": null
+                },
+                {
+                  "title": "Churn rate",
+                  "value": 25.58,
+                  "unit": "%",
+                  "trend": [],
+                  "trend_label": null
+                },
+                {
+                  "title": "Avg Monthly Charges",
+                  "value": 69.61,
+                  "unit": "$",
+                  "trend": [],
+                  "trend_label": null
+                },
+                {
+                  "title": "Avg Tenure (mo)",
+                  "value": 36.0,
+                  "unit": null,
+                  "trend": [],
+                  "trend_label": null
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "auto-funnel-3",
+        "title": "Retention Funnel",
+        "charts": [
+          {
+            "id": "auto-funnel-chart-4",
+            "type": "funnel",
+            "title": "Retention Funnel",
+            "insight": "Shows drop-off from all customers through add-on bundles and churned accounts.",
+            "query": {
+              "operation": "funnel",
+              "dataset_hint": "telco_churn_sample_funnel",
+              "stage_column": "stage",
+              "value_column": "count",
+              "comparison_column": "prev_count",
+              "stages": [
+                "All Customers",
+                "Phone Service",
+                "Internet Service",
+                "Bundle Add-ons",
+                "Churned"
+              ],
+              "options": {
+                "show_conversion": true,
+                "show_delta": true
+              },
+              "data": [
+                {
+                  "stage": "All Customers",
+                  "count": 5000,
+                  "definition": "All rows"
+                },
+                {
+                  "stage": "Phone Service",
+                  "count": 2501,
+                  "prev_count": 5000,
+                  "definition": "PhoneService == 'Yes'"
+                },
+                {
+                  "stage": "Internet Service",
+                  "count": 3328,
+                  "prev_count": 2501,
+                  "definition": "InternetService != 'No'"
+                },
+                {
+                  "stage": "Bundle Add-ons",
+                  "count": 3703,
+                  "prev_count": 3328,
+                  "definition": "At least two add-on services"
+                },
+                {
+                  "stage": "Churned",
+                  "count": 1279,
+                  "prev_count": 3703,
+                  "definition": "Churn == 'Yes'"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "auto-loyalty_scatter-6",
+        "title": "Loyalty vs Spend",
+        "charts": [
+          {
+            "id": "auto-loyalty_scatter-chart-5",
+            "type": "scatter",
+            "title": "Loyalty vs Spend",
+            "insight": "High-spend short-tenure churn: 27.59% vs 25.50% for other cohorts. Segment size: 4.06% of customers.",
+            "query": {
+              "operation": "scatter",
+              "dataset": "telco_churn_sample",
+              "x": "MonthlyCharges",
+              "y": "TotalCharges",
+              "size": "tenure",
+              "color": "Churn",
+              "text": null,
+              "tooltip_fields": [
+                "tenure",
+                "Churn"
+              ],
+              "options": {
+                "trendline": true,
+                "opacity": 0.85
+              }
+            }
+          }
+        ]
+      },
+      {
+        "title": "Key Performance Indicators (KPIs)",
+        "charts": [
+          {
+            "id": "active_customers",
+            "type": "kpi",
+            "query": {
+              "dataset": "telco_churn_sample",
+              "metric": "count",
+              "filter": {}
+            },
+            "insight": "Active Customers: 5,000"
+          },
+          {
+            "id": "overall_churn_rate",
+            "type": "kpi",
+            "query": {
+              "dataset": "telco_churn_sample",
+              "metric": "avg",
+              "column": "Churn",
+              "filter": {}
+            },
+            "insight": "Overall Churn Rate: 25.58%"
+          },
+          {
+            "id": "avg_monthly_charges",
+            "type": "kpi",
+            "query": {
+              "dataset": "telco_churn_sample",
+              "metric": "avg",
+              "column": "MonthlyCharges",
+              "filter": {}
+            },
+            "insight": "Average Monthly Charges: $69.61"
+          },
+          {
+            "id": "avg_tenure_months",
+            "type": "kpi",
+            "query": {
+              "dataset": "telco_churn_sample",
+              "metric": "avg",
+              "column": "tenure",
+              "filter": {}
+            },
+            "insight": "Average Tenure (months): 36.0 months"
+          }
+        ]
+      },
+      {
+        "title": "Customer Churn Funnel",
+        "charts": [
+          {
+            "id": "retention_funnel",
+            "type": "funnel",
+            "query": {
+              "dataset": "telco_churn_sample",
+              "stages": [
+                {
+                  "name": "All Customers",
+                  "column": "customerID"
+                },
+                {
+                  "name": "Phone Service",
+                  "column": "PhoneService",
+                  "filter": {
+                    "PhoneService": "Yes"
+                  }
+                },
+                {
+                  "name": "Internet Service",
+                  "column": "InternetService",
+                  "filter": {
+                    "InternetService": "!No"
+                  }
+                },
+                {
+                  "name": "Bundle Add-ons",
+                  "condition": "At least two add-on services"
+                },
+                {
+                  "name": "Churned",
+                  "column": "Churn",
+                  "filter": {
+                    "Churn": "Yes"
+                  }
+                }
+              ]
+            },
+            "insight": "Visualize the drop-off rate of customers at each stage of their lifecycle."
+          }
+        ]
+      },
+      {
+        "title": "Customer Loyalty and Churn Drivers",
+        "charts": [
+          {
+            "id": "loyalty_scatter",
+            "type": "scatter",
+            "query": {
+              "dataset": "telco_churn_sample",
+              "x": "MonthlyCharges",
+              "y": "TotalCharges",
+              "size": "tenure",
+              "color": "Churn"
+            },
+            "insight": "High spend, short tenure customers are churning at a rate of 27.59% (27.59% higher than other customer segments)."
+          }
+        ]
+      },
+      {
+        "title": "Churn Risk Factors",
+        "charts": [
+          {
+            "id": "churn_segments",
+            "type": "grouped_bar",
+            "query": {
+              "dataset": "telco_churn_sample",
+              "group_by": "Contract,InternetService,PaymentMethod",
+              "metric": "avg",
+              "column": "Churn"
+            },
+            "insight": "Explore the impact of contract type, internet service, and payment methods on churn rates."
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "prompt_version": "v1",
+    "model": "gemma2:27b",
+    "round_trips": 1,
+    "duration_ms": 22590.207800036296,
+    "prompt_hash": "7b83d99c4c5a48c610194a823efff347f439052199b87872cb572353f2f98559",
+    "requested_at": "2025-11-21T15:37:21.502279+00:00",
+    "session_id": null
+  },
+  "raw_response": "```json\n{\n  \"title\": \"Telco Churn Analysis\",\n  \"description\": \"Dashboard exploring customer churn drivers in a telecommunications dataset.\",\n  \"sections\": [\n    {\n      \"title\": \"Key Performance Indicators (KPIs)\",\n      \"charts\": [\n        {\n          \"id\": \"active_customers\",\n          \"type\": \"kpi\",\n          \"query\": {\n            \"dataset\": \"telco_churn_sample\",\n            \"metric\": \"count\",\n            \"filter\": {}\n          },\n          \"insight\": \"Active Customers: 5,000\"\n        },\n        {\n          \"id\": \"overall_churn_rate\",\n          \"type\": \"kpi\",\n          \"query\": {\n            \"dataset\": \"telco_churn_sample\",\n            \"metric\": \"avg\",\n            \"column\": \"Churn\",\n            \"filter\": {}\n          },\n          \"insight\": \"Overall Churn Rate: 25.58%\"\n        },\n        {\n          \"id\": \"avg_monthly_charges\",\n          \"type\": \"kpi\",\n          \"query\": {\n            \"dataset\": \"telco_churn_sample\",\n            \"metric\": \"avg\",\n            \"column\": \"MonthlyCharges\",\n            \"filter\": {}\n          },\n          \"insight\": \"Average Monthly Charges: $69.61\"\n        },\n        {\n          \"id\": \"avg_tenure_months\",\n          \"type\": \"kpi\",\n          \"query\": {\n            \"dataset\": \"telco_churn_sample\",\n            \"metric\": \"avg\",\n            \"column\": \"tenure\",\n            \"filter\": {}\n          },\n          \"insight\": \"Average Tenure (months): 36.0 months\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Customer Churn Funnel\",\n      \"charts\": [\n        {\n          \"id\": \"retention_funnel\",\n          \"type\": \"funnel\",\n          \"query\": {\n            \"dataset\": \"telco_churn_sample\",\n            \"stages\": [\n              {\"name\": \"All Customers\", \"column\": \"customerID\"},\n              {\"name\": \"Phone Service\", \"column\": \"PhoneService\", \"filter\": {\"PhoneService\": \"Yes\"}},\n              {\"name\": \"Internet Service\", \"column\": \"InternetService\", \"filter\": {\"InternetService\": \"!No\"}},\n              {\n                \"name\": \"Bundle Add-ons\", \n                \"condition\": \"At least two add-on services\"\n              },\n              {\"name\": \"Churned\", \"column\": \"Churn\", \"filter\": {\"Churn\": \"Yes\"}}\n            ]\n          },\n          \"insight\": \"Visualize the drop-off rate of customers at each stage of their lifecycle.\"\n        }\n      ]\n    },\n    {\n      \"title\": \"Customer Loyalty and Churn Drivers\",\n      \"charts\": [\n        {\n          \"id\": \"loyalty_scatter\",\n          \"type\": \"scatter\",\n          \"query\": {\n            \"dataset\": \"telco_churn_sample\",\n            \"x\": \"MonthlyCharges\",\n            \"y\": \"TotalCharges\",\n            \"size\": \"tenure\",\n            \"color\": \"Churn\"\n\n          },\n          \"insight\": \"High spend, short tenure customers are churning at a rate of 27.59% (27.59% higher than other customer segments).\"\n        }\n\n      ]\n    },\n    {\n\n      \"title\": \"Churn Risk Factors\",\n      \"charts\": [\n\n        {\n          \"id\": \"churn_segments\",\n          \"type\": \"grouped_bar\",\n          \"query\": {\n            \"dataset\": \"telco_churn_sample\",\n            \"group_by\": \"Contract,InternetService,PaymentMethod\",\n            \"metric\": \"avg\",\n\n            \"column\":  \"Churn\"\n\n          },\n          \"insight\": \"Explore the impact of contract type, internet service, and payment methods on churn rates.\"\n\n        }\n\n      ]\n    }\n\n\n  ]\n}\n```"
+}

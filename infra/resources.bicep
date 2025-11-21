@@ -618,6 +618,10 @@ resource agentApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
               value: agentAllowedOrigins
             }
             {
+              name: 'ORCH_PLANNER_REQUEST_DUMP_DIR'
+              value: '${agentArtifactsMountPath}/planner_payloads'
+            }
+            {
               name: 'AZURE_STORAGE_CONNECTION_STRING'
               secretRef: 'artifact-storage-connection-string'
             }

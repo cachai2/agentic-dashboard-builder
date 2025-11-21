@@ -62,7 +62,7 @@ Requires-Dist: pandas>=2.2
    - Author request/response models for `ProfileRequest`, `PlanRequest`, `RenderRequest`, etc.
 3. **Wrap tools**
    - Import the profiler/renderer modules directly so the orchestrator can call them synchronously.
-   - For remote Ollama, configure `ORCH_OLLAMA_HOST` so the planner tool sends structured `/api/chat` requests straight to the target deployment.
+   - For remote Ollama, configure `ORCH_OLLAMA_HOST` so the planner tool sends structured `/api/chat` requests straight to the Ollama deployment.
 4. **Build workflow**
    - Start with sequential execution: profile → plan → render → return artifact path.
    - Add retries (planner JSON validation) and validation steps (schema enforcement) inline.
@@ -71,6 +71,7 @@ Requires-Dist: pandas>=2.2
    - Add CLI for smoke testing (`python -m agent_orchestrator.cli --csv samples/retail_superstore_sample.csv`).
 6. **Observability**
    - Emit Agent Framework traces; optionally forward to Application Insights once instrumentation key is available.
+   - The planner tool now logs every `/api/chat` request/response (host, session ID, prompt hash, duration) at INFO so you can confirm when the orchestrator speaks directly to Ollama.
 
 ## Getting started
 
@@ -92,7 +93,7 @@ Requires-Dist: pandas>=2.2
    $env:ORCH_OLLAMA_HOST='https://<ollama-app-fqdn>'   # or http://127.0.0.1:11434 for local Ollama
    python -m agent_orchestrator.cli ..\CsvProfilerAgent\samples\retail_superstore_sample.csv --output-dir .\artifacts
 
-   # when running inside Docker, pass through the same host
+   # when running the orchestrator inside Docker, pass through the same host
    # docker run ... -e ORCH_OLLAMA_HOST="https://<ollama-app-fqdn>" ...
    ```
 
@@ -103,7 +104,7 @@ Requires-Dist: pandas>=2.2
 ### Azure container settings
 
 - `ORCH_ALLOWED_ORIGINS` – comma-delimited list of frontend origins that can call the API. Defaults cover `https://frontend-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io` and `http://localhost:5173`.
-- `ORCH_OLLAMA_HOST` – set to the Ollama deployment the orchestrator should call directly.
+- `ORCH_OLLAMA_HOST` – set to the Ollama deployment (`https://planner-ignite-demo-...azurecontainerapps.io` or your own) the orchestrator should call.
 
 ## Next actions
 

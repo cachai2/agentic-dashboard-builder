@@ -331,7 +331,7 @@ class StructuredPlanner:
             "temperature": 0.1,
             "stream": False,
         }
-        self._dump_gateway_payload(payload, session_id)
+        dump_token = self._dump_gateway_payload(payload, session_id)
         client = self._ensure_embedded_client()
         messages = payload["messages"]
         prompt_hash = prompt_bundle.get("prompt_hash")
@@ -358,6 +358,7 @@ class StructuredPlanner:
         )
         if not raw:
             raw = json.dumps(parsed)
+        self._dump_gateway_response(raw, session_id, dump_token)
         return raw
 
     def _ensure_embedded_client(self) -> Any:
@@ -473,18 +474,33 @@ class StructuredPlanner:
                 return None
         return current
 
-    def _dump_gateway_payload(self, payload: Dict[str, Any], session_id: Optional[str]) -> None:
+    def _dump_gateway_payload(self, payload: Dict[str, Any], session_id: Optional[str]) -> str | None:
         dump_dir = self._request_dump_dir
         if not dump_dir:
-            return
+            return None
         try:
             dump_dir.mkdir(parents=True, exist_ok=True)
             ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
             suffix = f"_{session_id}" if session_id else ""
             path = dump_dir / f"planner_payload{suffix}_{ts}.json"
             path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            return ts
         except Exception as exc:  # pragma: no cover - diagnostics only
             logger.warning("Failed to dump planner payload: %s", exc)
+        return None
+
+    def _dump_gateway_response(self, raw_response: str, session_id: Optional[str], token: Optional[str]) -> None:
+        dump_dir = self._request_dump_dir
+        if not dump_dir:
+            return
+        try:
+            dump_dir.mkdir(parents=True, exist_ok=True)
+            ts = token or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+            suffix = f"_{session_id}" if session_id else ""
+            path = dump_dir / f"planner_response{suffix}_{ts}.json"
+            path.write_text(raw_response, encoding="utf-8")
+        except Exception as exc:  # pragma: no cover - diagnostics only
+            logger.warning("Failed to dump planner response: %s", exc)
 
 
 _PLANNER_INSTANCE: StructuredPlanner | None = None

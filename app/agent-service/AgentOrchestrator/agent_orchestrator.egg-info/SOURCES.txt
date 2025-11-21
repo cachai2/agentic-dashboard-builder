@@ -25,3 +25,4 @@ agent_orchestrator/tools/plan_tool.py
 agent_orchestrator/tools/profile_tool.py
 agent_orchestrator/workflows/__init__.py
 agent_orchestrator/workflows/upload_to_dashboard.py
+tests/test_telco_happy_path.py

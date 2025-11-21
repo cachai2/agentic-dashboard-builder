@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { useEffect, useState } from 'react'
 import { copy } from '@/config/ui'
 import { usePlannerSession } from '@/hooks/usePlannerSession'
 import {
@@ -11,6 +12,7 @@ import {
   Uploader,
 } from '@/components'
 import type { Step } from '@/components'
+import { downloadDashboardHtml } from '@/utils/downloadDashboardHtml'
 import styles from './PlaygroundPage.module.css'
 
 export const PlaygroundPage = () => {
@@ -24,6 +26,8 @@ export const PlaygroundPage = () => {
     errors,
     plannerMode,
   } = usePlannerSession()
+  const [isDownloadingDashboard, setIsDownloadingDashboard] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   const hasUploadStarted = Boolean(session) || isUploading
   const hasDashboard = Boolean(dashboard)
@@ -53,6 +57,46 @@ export const PlaygroundPage = () => {
   const plannerModeLabel =
     plannerMode === 'mock' ? 'Mock planner (local data)' : plannerMode === 'live' ? 'Live planner (API)' : 'Custom planner'
 
+  useEffect(() => {
+    if (!dashboard) {
+      setDownloadError(null)
+      setIsDownloadingDashboard(false)
+    }
+  }, [dashboard])
+
+  const handleDownloadDashboard = async () => {
+    if (!dashboard?.iframeUrl) return
+    setIsDownloadingDashboard(true)
+    setDownloadError(null)
+    try {
+      const fallbackName = session ? `dashboard-${session.sessionId}` : 'dashboard'
+      await downloadDashboardHtml(dashboard.iframeUrl, { suggestedName: fallbackName })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to download dashboard HTML.'
+      setDownloadError(message)
+    } finally {
+      setIsDownloadingDashboard(false)
+    }
+  }
+
+  const dashboardActions = dashboard?.iframeUrl ? (
+    <div className={styles.dashboardActions}>
+      <button
+        type="button"
+        className={styles.downloadButton}
+        onClick={handleDownloadDashboard}
+        disabled={isDownloadingDashboard}
+      >
+        {isDownloadingDashboard ? 'Preparing download…' : 'Download HTML'}
+      </button>
+      {downloadError ? (
+        <span className={styles.downloadError}>{downloadError}</span>
+      ) : (
+        <span className={styles.downloadHint}>Saves the generated dashboard locally</span>
+      )}
+    </div>
+  ) : null
+
   return (
     <div>
       <StepIndicator steps={steps} />
@@ -80,6 +124,7 @@ export const PlaygroundPage = () => {
             className={styles.dashboardPanel}
             title={copy.dashboard.title}
             helper={copy.dashboard.helper}
+            actions={dashboardActions}
           >
             <div className={styles.dashboardBody}>
               <MetricsGrid metrics={dashboard?.metrics ?? []} />
