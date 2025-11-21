@@ -133,17 +133,19 @@ class StructuredPlanner:
 
         if self._planner_mode == "mock":
             raw_response = self._mock_plan_path.read_text(encoding="utf-8")
-            plan = self._validator.parse_and_validate(raw_response)
+            plan = self._validator.parse(raw_response)
+            plan = self._ensure_valid_plan(plan)
             plan = augment_plan(plan, profile_summary)
-            jsonschema.validate(instance=plan, schema=self._validator.schema)
+            plan = self._ensure_valid_plan(plan)
             return self._build_success(plan, raw_response, 1, start, prompt_bundle, session_id)
 
         for attempt in range(2):
             try:
                 raw_response = self._invoke_gateway(prompt_bundle, session_id)
-                plan = self._validator.parse_and_validate(raw_response)
+                plan = self._validator.parse(raw_response)
+                plan = self._ensure_valid_plan(plan)
                 plan = augment_plan(plan, profile_summary)
-                jsonschema.validate(instance=plan, schema=self._validator.schema)
+                plan = self._ensure_valid_plan(plan)
                 return self._build_success(plan, raw_response, attempt + 1, start, prompt_bundle, session_id)
             except Exception as exc:  # pragma: no cover - relies on live service
                 last_error = exc
@@ -251,6 +253,83 @@ class StructuredPlanner:
             },
         )
         return {"plan": plan, "metadata": metadata, "raw_response": raw_response}
+
+    def _ensure_valid_plan(self, plan: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            self._validator.validate(plan)
+            return plan
+        except jsonschema.ValidationError as error:
+            salvaged = self._attempt_salvage_plan(plan, error)
+            self._validator.validate(salvaged)
+            return salvaged
+
+    def _attempt_salvage_plan(self, plan: Dict[str, Any], error: jsonschema.ValidationError) -> Dict[str, Any]:
+        path = list(error.path)
+        removal_metadata = self._remove_invalid_path(plan, path)
+        if not removal_metadata:
+            raise error
+
+        removal_metadata["error_path"] = path
+        try:
+            self._validator.filter_invalid_charts(plan)
+        except ValueError as cleanup_error:
+            raise error from cleanup_error
+
+        logger.warning("Salvaged planner output by dropping invalid chart", extra=removal_metadata)
+        return plan
+
+    def _remove_invalid_path(self, plan: Dict[str, Any], path: list[Any]) -> Dict[str, Any] | None:
+        chart_metadata = self._remove_chart_at_path(plan, path)
+        if chart_metadata:
+            return chart_metadata
+        return self._remove_section_at_path(plan, path)
+
+    def _remove_chart_at_path(self, plan: Dict[str, Any], path: list[Any]) -> Dict[str, Any] | None:
+        for idx, key in enumerate(path):
+            if key == "charts" and idx + 1 < len(path):
+                chart_index = path[idx + 1]
+                if not isinstance(chart_index, int):
+                    continue
+                section_node = self._resolve_path(plan, path[:idx])
+                charts: Any | None = None
+                if isinstance(section_node, dict):
+                    charts = section_node.get("charts")
+                elif isinstance(section_node, list):
+                    charts = section_node
+                if isinstance(charts, list) and 0 <= chart_index < len(charts):
+                    removed = charts.pop(chart_index)
+                    section_title = section_node.get("title") if isinstance(section_node, dict) else None
+                    chart_id = removed.get("id") if isinstance(removed, dict) else None
+                    return {"section": section_title, "chart_index": chart_index, "chart_id": chart_id}
+        return None
+
+    def _remove_section_at_path(self, plan: Dict[str, Any], path: list[Any]) -> Dict[str, Any] | None:
+        for idx, key in enumerate(path):
+            if key == "sections" and idx + 1 < len(path):
+                section_index = path[idx + 1]
+                if not isinstance(section_index, int):
+                    continue
+                sections = plan.get("sections")
+                if isinstance(sections, list) and 0 <= section_index < len(sections):
+                    removed = sections.pop(section_index)
+                    section_title = removed.get("title") if isinstance(removed, dict) else None
+                    return {"section": section_title, "section_index": section_index}
+        return None
+
+    def _resolve_path(self, node: Any, path: list[Any]) -> Any:
+        current = node
+        for key in path:
+            if isinstance(key, int):
+                if not isinstance(current, list) or not (0 <= key < len(current)):
+                    return None
+                current = current[key]
+            else:
+                if not isinstance(current, dict):
+                    return None
+                current = current.get(key)
+            if current is None:
+                return None
+        return current
 
     def _dump_gateway_payload(self, payload: Dict[str, Any], session_id: Optional[str]) -> None:
         dump_dir = self._request_dump_dir
