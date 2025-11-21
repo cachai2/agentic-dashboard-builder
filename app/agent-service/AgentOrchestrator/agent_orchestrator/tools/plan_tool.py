@@ -31,6 +31,12 @@ def _detect_repo_root() -> Path | None:
     for parent in current.parents:
         if (parent / "azure.yaml").exists():
             return parent
+        if (parent / "AgentOrchestrator").exists() and (
+            (parent / "OllamaStructuredJson").exists()
+            or (parent / "ollama_proxy_service").exists()
+            or (parent / "ollama-proxy-service").exists()
+        ):
+            return parent
     return None
 
 
@@ -68,28 +74,42 @@ def _bootstrap_repo_planner_packages() -> None:
     if not repo_root:
         return
 
-    registrations = [
-        ("ollama_proxy_service", repo_root / "app" / "ollama-proxy-service" / "ollama_proxy_service"),
-        (
-            "ollama_proxy_service.app",
-            repo_root / "app" / "ollama-proxy-service" / "ollama_proxy_service" / "app",
-        ),
-        (
-            "OllamaStructuredJson",
-            repo_root / "app" / "agent-service" / "OllamaStructuredJson" / "OllamaStructuredJson",
-        ),
-        (
-            "OllamaStructuredJson.app",
-            repo_root
-            / "app"
-            / "agent-service"
-            / "OllamaStructuredJson"
-            / "OllamaStructuredJson"
-            / "app",
-        ),
-    ]
-    for module_name, directory in registrations:
-        _ensure_local_package(module_name, directory)
+    # When running inside the repo root, the planner helpers live under app/...; when running
+    # inside the container we copy only the app/ subtree, so adjust dynamically.
+    if (repo_root / "app" / "AgentOrchestrator").exists():
+        workspace_root = repo_root / "app"
+    else:
+        workspace_root = repo_root
+
+    def _register(module_name: str, *relative_paths: tuple[str, ...]) -> None:
+        for segments in relative_paths:
+            candidate = workspace_root
+            for segment in segments:
+                candidate = candidate / segment
+            if candidate.exists():
+                _ensure_local_package(module_name, candidate)
+                break
+
+    _register(
+        "ollama_proxy_service",
+        ("ollama-proxy-service", "ollama_proxy_service"),
+        ("ollama_proxy_service", "ollama_proxy_service"),
+    )
+    _register(
+        "ollama_proxy_service.app",
+        ("ollama-proxy-service", "ollama_proxy_service", "app"),
+        ("ollama_proxy_service", "ollama_proxy_service", "app"),
+    )
+    _register(
+        "OllamaStructuredJson",
+        ("agent-service", "OllamaStructuredJson", "OllamaStructuredJson"),
+        ("OllamaStructuredJson", "OllamaStructuredJson"),
+    )
+    _register(
+        "OllamaStructuredJson.app",
+        ("agent-service", "OllamaStructuredJson", "OllamaStructuredJson", "app"),
+        ("OllamaStructuredJson", "OllamaStructuredJson", "app"),
+    )
 
     _PLANNER_BOOTSTRAPPED = True
 
@@ -116,26 +136,11 @@ def _load_planner_modules():
             from OllamaStructuredJson.app.validator import PlanValidator as _Validator
 
             return _augment, _hash, _render, _PlannerSettings, _Validator, _Client
-        except ModuleNotFoundError:  # pragma: no cover - fallback to the Playground namespace dynamically
-            from importlib import import_module
-
-            _builder_module = import_module("Playground.OllamaStructuredJson.app.builder")
-            _hash = _builder_module.compute_prompt_hash
-            _render = _builder_module.render_prompt
-
-            _config_module = import_module("Playground.OllamaStructuredJson.app.config")
-            _PlannerSettings = _config_module.Settings
-
-            _augment_module = import_module("Playground.OllamaStructuredJson.app.augmentations")
-            _augment = _augment_module.augment_plan
-
-            _validator_module = import_module("Playground.OllamaStructuredJson.app.validator")
-            _Validator = _validator_module.PlanValidator
-
-            _client_module = import_module("Playground.OllamaStructuredJson.app.client")
-            _Client = _client_module.OllamaClient
-
-            return _augment, _hash, _render, _PlannerSettings, _Validator, _Client
+        except ModuleNotFoundError as exc:  # pragma: no cover - misconfigured container
+            raise RuntimeError(
+                "Planner modules are unavailable. Ensure the ollama-proxy-service or "
+                "OllamaStructuredJson packages are present in the container image."
+            ) from exc
 
 
 augment_plan, compute_prompt_hash, render_prompt, PlannerSettings, PlanValidator, GatewayClient = _load_planner_modules()

@@ -1,0 +1,228 @@
+{
+  "model": "gemma2:27b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "# System Prompt v1\n\nYou are the dashboard planning agent for the Ignite demo. Your job is to convert structured dataset metadata into a JSON object that matches the DashboardPlan schema. Follow these rules:\n\n1. Only reference columns provided in the profile summary.\n2. Prefer concise titles and insights (<= 120 characters).\n3. Assume the CsvProfilerAgent has already produced the JSON profile you receive; rely exclusively on that structured metadata rather than re-inferring from raw CSVs.\n4. Use the profile signals to choose the most helpful chart operations (timeseries, categorical comparisons, distributions, KPI cards, groupbys, funnels, scatter, etc.) so that downstream chart tools know exactly what to render.\n5. When an `llm_annotations` block is present (kpis, churn segments, retention funnels, loyalty hints, driver candidates), use those curated signals to prioritize KPI tiles, funnel stages, heatmaps, and scatter plots with the exact column mappings they highlight.\n6. Map each chart to the fields and aggregations the chart tools expect (e.g., identify the dataset field, dimensions, metrics, aggregations, filters) so the ChartRenderingAgent can invoke the right tool without guesswork.\n7. Never repeat the same chart type with identical metadata.\n8. Return strictly valid JSON with double quotes and no trailing commas."
+    },
+    {
+      "role": "user",
+      "content": "# User Prompt Template\n\nProfile summary JSON:\n\n```json\n{\"dataset_name\":\"telco_churn_sample\",\"row_count\":10000,\"sampled_row_count\":5000,\"sampling_ratio\":0.5,\"column_count\":21,\"generated_at\":\"2025-11-21T13:58:02.425758Z\",\"columns\":[{\"name\":\"customerID\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":5000,\"example\":\"6252-1158\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"6252-1158\",\"count\":1,\"percent\":0.02},{\"value\":\"4684-9308\",\"count\":1,\"percent\":0.02},{\"value\":\"1731-7250\",\"count\":1,\"percent\":0.02},{\"value\":\"4742-6447\",\"count\":1,\"percent\":0.02},{\"value\":\"4521-1417\",\"count\":1,\"percent\":0.02}]}},{\"name\":\"gender\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":2,\"example\":\"Male\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"Female\",\"count\":2561,\"percent\":51.22},{\"value\":\"Male\",\"count\":2439,\"percent\":48.78}]}},{\"name\":\"SeniorCitizen\",\"semantic_type\":\"numeric\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":2,\"example\":\"1\",\"numeric_stats\":{\"min\":0.0,\"max\":1.0,\"mean\":0.4902,\"stddev\":0.499953948669433,\"p05\":0.0,\"p95\":1.0},\"categorical_stats\":null},{\"name\":\"Partner\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":2,\"example\":\"Yes\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"No\",\"count\":2514,\"percent\":50.28},{\"value\":\"Yes\",\"count\":2486,\"percent\":49.72}]}},{\"name\":\"Dependents\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":2,\"example\":\"No\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"No\",\"count\":2548,\"percent\":50.96},{\"value\":\"Yes\",\"count\":2452,\"percent\":49.04}]}},{\"name\":\"tenure\",\"semantic_type\":\"numeric\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":73,\"example\":\"24\",\"numeric_stats\":{\"min\":0.0,\"max\":72.0,\"mean\":35.97,\"stddev\":21.11820768292489,\"p05\":3.0,\"p95\":69.0},\"categorical_stats\":null},{\"name\":\"PhoneService\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":2,\"example\":\"Yes\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"Yes\",\"count\":2501,\"percent\":50.02},{\"value\":\"No\",\"count\":2499,\"percent\":49.98}]}},{\"name\":\"MultipleLines\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":3,\"example\":\"No\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"Yes\",\"count\":1699,\"percent\":33.98},{\"value\":\"No\",\"count\":1660,\"percent\":33.2},{\"value\":\"No phone service\",\"count\":1641,\"percent\":32.82}]}},{\"name\":\"InternetService\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":3,\"example\":\"DSL\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"Fiber optic\",\"count\":1692,\"percent\":33.84},{\"value\":\"No\",\"count\":1672,\"percent\":33.44},{\"value\":\"DSL\",\"count\":1636,\"percent\":32.72}]}},{\"name\":\"OnlineSecurity\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":3,\"example\":\"No\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"No internet service\",\"count\":1722,\"percent\":34.44},{\"value\":\"No\",\"count\":1649,\"percent\":32.98},{\"value\":\"Yes\",\"count\":1629,\"percent\":32.58}]}},{\"name\":\"OnlineBackup\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":3,\"example\":\"No\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"No internet service\",\"count\":1682,\"percent\":33.64},{\"value\":\"Yes\",\"count\":1660,\"percent\":33.2},{\"value\":\"No\",\"count\":1658,\"percent\":33.16}]}},{\"name\":\"DeviceProtection\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":3,\"example\":\"No internet service\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"No internet service\",\"count\":1687,\"percent\":33.74},{\"value\":\"Yes\",\"count\":1681,\"percent\":33.62},{\"value\":\"No\",\"count\":1632,\"percent\":32.64}]}},{\"name\":\"TechSupport\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":3,\"example\":\"No internet service\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"No internet service\",\"count\":1706,\"percent\":34.12},{\"value\":\"Yes\",\"count\":1682,\"percent\":33.64},{\"value\":\"No\",\"count\":1612,\"percent\":32.24}]}},{\"name\":\"StreamingTV\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":3,\"example\":\"No internet service\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"No\",\"count\":1690,\"percent\":33.8},{\"value\":\"Yes\",\"count\":1665,\"percent\":33.3},{\"value\":\"No internet service\",\"count\":1645,\"percent\":32.9}]}},{\"name\":\"StreamingMovies\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":3,\"example\":\"Yes\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"Yes\",\"count\":1700,\"percent\":34.0},{\"value\":\"No\",\"count\":1668,\"percent\":33.36},{\"value\":\"No internet service\",\"count\":1632,\"percent\":32.64}]}},{\"name\":\"Contract\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":3,\"example\":\"Two year\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"One year\",\"count\":1687,\"percent\":33.74},{\"value\":\"Two year\",\"count\":1679,\"percent\":33.58},{\"value\":\"Month-to-month\",\"count\":1634,\"percent\":32.68}]}},{\"name\":\"PaperlessBilling\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":2,\"example\":\"Yes\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"No\",\"count\":2516,\"percent\":50.32},{\"value\":\"Yes\",\"count\":2484,\"percent\":49.68}]}},{\"name\":\"PaymentMethod\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":4,\"example\":\"Mailed check\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"Electronic check\",\"count\":1304,\"percent\":26.08},{\"value\":\"Credit card (automatic)\",\"count\":1241,\"percent\":24.82},{\"value\":\"Mailed check\",\"count\":1232,\"percent\":24.64},{\"value\":\"Bank transfer (automatic)\",\"count\":1223,\"percent\":24.46}]}},{\"name\":\"MonthlyCharges\",\"semantic_type\":\"numeric\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":3986,\"example\":\"115.6\",\"numeric_stats\":{\"min\":18.07,\"max\":120.0,\"mean\":69.610602,\"stddev\":29.588842140466372,\"p05\":23.178,\"p95\":115.6205},\"categorical_stats\":null},{\"name\":\"TotalCharges\",\"semantic_type\":\"numeric\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":4984,\"example\":\"2755.22\",\"numeric_stats\":{\"min\":0.19,\"max\":8624.98,\"mean\":2521.19502,\"stddev\":1923.6822741867545,\"p05\":210.203,\"p95\":6390.1995000000015},\"categorical_stats\":null},{\"name\":\"Churn\",\"semantic_type\":\"categorical\",\"null_count\":0,\"null_pct\":0.0,\"distinct_count\":2,\"example\":\"Yes\",\"numeric_stats\":null,\"categorical_stats\":{\"top_values\":[{\"value\":\"No\",\"count\":3721,\"percent\":74.42},{\"value\":\"Yes\",\"count\":1279,\"percent\":25.58}]}}],\"llm_annotations\":{\"dataset_shape\":{\"rows\":5000,\"columns\":21},\"target_signal\":{\"column\":\"Churn\",\"positive_label\":\"Yes\",\"overall_rate_pct\":25.58},\"kpis\":[{\"id\":\"active_customers\",\"label\":\"Active Customers\",\"value\":5000},{\"id\":\"overall_churn_rate\",\"label\":\"Churn rate\",\"value_pct\":25.58},{\"id\":\"avg_monthly_charges\",\"label\":\"Avg Monthly Charges\",\"value\":69.61,\"unit\":\"$\"},{\"id\":\"avg_tenure_months\",\"label\":\"Avg Tenure (mo)\",\"value\":36.0}],\"segments\":{\"Contract\":[{\"value\":\"one year\",\"customers\":1687,\"churn_rate_pct\":24.36},{\"value\":\"two year\",\"customers\":1679,\"churn_rate_pct\":27.1},{\"value\":\"month-to-month\",\"customers\":1634,\"churn_rate_pct\":25.28}],\"InternetService\":[{\"value\":\"fiber optic\",\"customers\":1692,\"churn_rate_pct\":24.94},{\"value\":\"no\",\"customers\":1672,\"churn_rate_pct\":24.34},{\"value\":\"dsl\",\"customers\":1636,\"churn_rate_pct\":27.51}],\"PaymentMethod\":[{\"value\":\"electronic check\",\"customers\":1304,\"churn_rate_pct\":25.61},{\"value\":\"credit card (automatic)\",\"customers\":1241,\"churn_rate_pct\":26.51},{\"value\":\"mailed check\",\"customers\":1232,\"churn_rate_pct\":25.0},{\"value\":\"bank transfer (automatic)\",\"customers\":1223,\"churn_rate_pct\":25.18}],\"SeniorCitizen\":[{\"value\":\"0\",\"customers\":2549,\"churn_rate_pct\":25.66},{\"value\":\"1\",\"customers\":2451,\"churn_rate_pct\":25.5}],\"PaperlessBilling\":[{\"value\":\"no\",\"customers\":2516,\"churn_rate_pct\":25.52},{\"value\":\"yes\",\"customers\":2484,\"churn_rate_pct\":25.64}],\"tenure_band\":[{\"value\":\"13-24 mo\",\"customers\":895,\"churn_rate_pct\":27.26},{\"value\":\"0-12 mo\",\"customers\":868,\"churn_rate_pct\":23.5},{\"value\":\"61-72 mo\",\"customers\":844,\"churn_rate_pct\":25.0},{\"value\":\"37-48 mo\",\"customers\":804,\"churn_rate_pct\":24.88},{\"value\":\"49-60 mo\",\"customers\":797,\"churn_rate_pct\":27.6},{\"value\":\"25-36 mo\",\"customers\":792,\"churn_rate_pct\":25.25}]},\"retention_funnel\":{\"stages\":[{\"stage\":\"All Customers\",\"count\":5000,\"definition\":\"All rows\"},{\"stage\":\"Phone Service\",\"count\":2501,\"definition\":\"PhoneService == 'Yes'\"},{\"stage\":\"Internet Service\",\"count\":3328,\"definition\":\"InternetService != 'No'\"},{\"stage\":\"Bundle Add-ons\",\"count\":3703,\"definition\":\"At least two add-on services\"},{\"stage\":\"Churned\",\"count\":1279,\"definition\":\"Churn == 'Yes'\"}]},\"loyalty_hint\":{\"columns\":{\"x\":\"MonthlyCharges\",\"y\":\"TotalCharges\",\"size\":\"tenure\",\"color\":\"Churn\"},\"high_spend_short_tenure_share_pct\":4.06,\"high_spend_short_tenure_churn_pct\":27.59,\"other_segments_churn_pct\":25.5},\"driver_candidates\":[{\"feature\":\"InternetService\",\"max_value\":\"dsl\",\"max_rate_pct\":27.51,\"min_value\":\"no\",\"min_rate_pct\":24.34,\"delta_pct\":3.17},{\"feature\":\"Contract\",\"max_value\":\"two year\",\"max_rate_pct\":27.1,\"min_value\":\"one year\",\"min_rate_pct\":24.36,\"delta_pct\":2.74},{\"feature\":\"OnlineSecurity\",\"max_value\":\"no internet service\",\"max_rate_pct\":27.0,\"min_value\":\"yes\",\"min_rate_pct\":24.8,\"delta_pct\":2.2},{\"feature\":\"PaymentMethod\",\"max_value\":\"credit card (automatic)\",\"max_rate_pct\":26.51,\"min_value\":\"mailed check\",\"min_rate_pct\":25.0,\"delta_pct\":1.51}]}}\n```\n\nReturn only the JSON body of a DashboardPlan captured under a root object:\n\n```json\n{\n  \"title\": string,\n  \"description\": string,\n  \"sections\": [\n    {\n      \"title\": string,\n      \"charts\": [\n        {\n          \"id\": string,\n          \"type\": string,\n          \"query\": {...},\n          \"insight\": string\n        }\n      ]\n    }\n  ]\n}\n```\n\nIf `llm_annotations` is present inside `profile_summary`, fold it directly into the plan:\n\n- Promote the strongest `kpis` into a KPI grid or headline cards (carry over labels/units).\n- Mirror the `retention_funnel.stages` order for any funnel chart and reference the underlying dataset columns mentioned in each stage definition (PhoneService, InternetService, add-on counts, target label, etc.).\n- Use `loyalty_hint.columns` for scatter plots (MonthlyCharges vs TotalCharges sized by tenure, colored by the detected target) and cite the churn lift metrics in the `insight` text.\n- Turn `segments`/`driver_candidates` into grouped comparisons or heatmaps that emphasize the largest churn deltas across features like Contract, InternetService, TechSupport, and tenure_band."
+    }
+  ],
+  "stream": false,
+  "temperature": 0.1,
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "DashboardPlan",
+    "type": "object",
+    "required": [
+      "title",
+      "description",
+      "sections"
+    ],
+    "properties": {
+      "title": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": {
+        "type": "string",
+        "minLength": 1
+      },
+      "summary": {
+        "type": "string"
+      },
+      "version": {
+        "type": "string"
+      },
+      "metadata": {
+        "type": "object"
+      },
+      "datasets": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "format": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "query": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "sections": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": [
+            "title",
+            "charts"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": {
+              "type": "string"
+            },
+            "layout": {
+              "type": "string"
+            },
+            "filters": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "type": "string"
+                  },
+                  "operator": {
+                    "type": "string"
+                  },
+                  "value": {}
+                },
+                "additionalProperties": true
+              }
+            },
+            "charts": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "query"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "insight": {
+                    "type": "string"
+                  },
+                  "dataset": {
+                    "type": "string"
+                  },
+                  "layout": {
+                    "type": "string"
+                  },
+                  "cards": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "title",
+                        "value"
+                      ],
+                      "properties": {
+                        "title": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "number"
+                        },
+                        "unit": {
+                          "type": "string"
+                        },
+                        "delta": {},
+                        "trend": {
+                          "type": "array",
+                          "items": {}
+                        },
+                        "trend_label": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "stages": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "tooltip_fields": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "query": {
+                    "type": "object",
+                    "minProperties": 1,
+                    "additionalProperties": true
+                  },
+                  "options": {
+                    "type": "object"
+                  },
+                  "annotations": {
+                    "type": "object"
+                  },
+                  "metrics": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "dimensions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          },
+          "additionalProperties": true
+        }
+      }
+    },
+    "additionalProperties": true
+  }
+}

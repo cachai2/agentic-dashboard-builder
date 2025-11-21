@@ -20,7 +20,6 @@ COPY ollama-proxy-service/. ${APP_HOME}/ollama_proxy_service/
 RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r CsvProfilerAgent/requirements.txt \
     && pip install --no-cache-dir -r ChartRenderingAgent/requirements.txt \
-    && pip install --no-cache-dir -r ollama_proxy_service/requirements.txt \
     && pip install --no-cache-dir -e AgentOrchestrator
 
 ENV PYTHONPATH=${APP_HOME}
