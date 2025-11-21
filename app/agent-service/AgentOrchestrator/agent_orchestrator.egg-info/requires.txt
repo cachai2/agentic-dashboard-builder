@@ -9,3 +9,4 @@ jsonschema>=4.19
 fastapi>=0.115
 python-multipart>=0.0.9
 uvicorn>=0.30
+pandas>=2.2

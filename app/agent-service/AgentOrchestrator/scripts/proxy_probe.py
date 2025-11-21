@@ -15,7 +15,7 @@ messages = [
 payload = {
     "messages": messages,
     "schema": schema,
-    "model": "llama3.1:8b",
+    "model": "gemma2:27b",
     "temperature": 0.1,
     "stream": False,
 }

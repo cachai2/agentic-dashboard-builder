@@ -25,7 +25,7 @@ def main(use_plan_schema: bool = False) -> None:
             {"role": "user", "content": "Say hi using valid JSON."},
         ],
         "schema": schema,
-        "model": "llama3.1:8b",
+        "model": "gemma2:27b",
         "temperature": 0.1,
         "stream": False,
     }

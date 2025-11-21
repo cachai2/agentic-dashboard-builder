@@ -1,6 +1,6 @@
 Given that README + your setup are:
 
-model: llama3.1:8b
+model: gemma2:27b
 
 env vars: OLLAMA_HOST, OLLAMA_MODEL
 
@@ -25,7 +25,7 @@ This is what your GPU planner call should roughly look like, pointed at your ACA
 curl -i "https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io/api/chat" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "llama3.1:8b",
+    "model": "gemma2:27b",
     "messages": [
       {
         "role": "system",
@@ -46,7 +46,7 @@ curl -i "https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontai
 The response will look like:
 
 {
-  "model": "llama3.1:8b",
+  "model": "gemma2:27b",
   "message": {
     "role": "assistant",
     "content": "{ \"title\": \"Quarterly Revenue Overview\", \"priority\": \"overview\", \"sections\": [ ... ] }"
@@ -68,7 +68,7 @@ import httpx
 from fastapi import HTTPException
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST")  # e.g. https://ollama-...azurecontainerapps.io
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma2:27b")
 
 async def call_planner(profile: dict, user_request: str) -> dict:
     """
@@ -165,7 +165,7 @@ If you want to keep that wording literal and use generate, you can do:
 curl -i "https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io/api/generate" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "llama3.1:8b",
+    "model": "gemma2:27b",
     "prompt": "You are a dashboard planner ... [instructions + profile + request here]",
     "stream": false
   }'
@@ -191,12 +191,12 @@ TL;DR: the calls should look like
 
 Endpoint: POST $OLLAMA_HOST/api/chat
 
-Model: OLLAMA_MODEL (default llama3.1:8b)
+Model: OLLAMA_MODEL (default gemma2:27b)
 
 Payload:
 
 {
-  "model": "llama3.1:8b",
+  "model": "gemma2:27b",
   "messages": [
     { "role": "system", "content": "You are a dashboard planner..." },
     { "role": "user", "content": "{ \"user_request\": \"...\", \"profile\": { ... } }" }

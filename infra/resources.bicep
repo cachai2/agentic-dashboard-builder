@@ -51,6 +51,7 @@ var containerAppsEnvironmentName = 'cae-${baseName}'
 var ollamaAppName = 'ollama-${baseName}'
 var agentAppName = 'agent-${baseName}'
 var frontendAppName = 'frontend-${baseName}'
+var plannerGatewayAppName = 'planner-${baseName}'
 var nginxAuthProxyAppName = 'proxy-${baseName}'
 var logAnalyticsWorkspaceName = 'log-${baseName}'
 var storagePrivateLinkFqdn = '${storageAccountName}.privatelink.file.${environment().suffixes.storage}'
@@ -65,6 +66,9 @@ var seedScriptLines = [
   ''
   'echo "[seed-acr-images] importing ollama:latest"'
   format('az acr import --resource-group {0} --name {1} --source mcr.microsoft.com/azuredocs/containerapps-helloworld:latest --image ollama:latest --force --only-show-errors --output none', resourceGroup().name, containerRegistryName)
+  ''
+  'echo "[seed-acr-images] importing planner-planner:latest"'
+  format('az acr import --resource-group {0} --name {1} --source mcr.microsoft.com/azuredocs/containerapps-helloworld:latest --image planner-planner:latest --force --only-show-errors --output none', resourceGroup().name, containerRegistryName)
   ''
   'echo "[seed-acr-images] importing nginx-auth-proxy:latest"'
   format('az acr import --resource-group {0} --name {1} --source mcr.microsoft.com/azuredocs/containerapps-helloworld:latest --image nginx-auth-proxy:latest --force --only-show-errors --output none', resourceGroup().name, containerRegistryName)
@@ -611,7 +615,7 @@ resource agentApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
             }
             {
               name: 'ORCH_PLANNER_GATEWAY_HOST'
-              value: format('https://{0}', ollamaModule.outputs.OLLAMA_HOST)
+              value: format('https://{0}', plannerGatewayApp.properties.configuration.ingress.fqdn)
             }
             {
               name: 'ORCH_ALLOWED_ORIGINS'
@@ -679,6 +683,77 @@ resource agentApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
           }
         ]
       )
+    }
+  }
+}
+
+resource plannerGatewayApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
+  name: plannerGatewayAppName
+  location: location
+  tags: {'azd-service-name': 'planner'}
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
+  }
+  dependsOn: [
+    seedImages
+  ]
+  properties: {
+    environmentId: containerAppsEnvironment.id
+    workloadProfileName: 'Consumption'
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 8080
+        transport: 'Auto'
+        allowInsecure: true
+      }
+      registries: [
+        {
+          server: containerRegistry.properties.loginServer
+          identity: userAssignedIdentity.id
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'planner'
+          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          env: [
+            {
+              name: 'OLLAMA_HOST'
+              value: format('https://{0}', ollamaModule.outputs.OLLAMA_HOST)
+            }
+            {
+              name: 'OLLAMA_MODE'
+              value: 'remote'
+            }
+            {
+              name: 'OLLAMA_API_PATH'
+              value: '/api/chat'
+            }
+            {
+              name: 'PLAN_SCHEMA_PATH'
+              value: '/app/schemas/dashboard_plan.schema.json'
+            }
+            {
+              name: 'PORT'
+              value: '8080'
+            }
+          ]
+          resources: {
+            cpu: 2
+            memory: '4Gi'
+          }
+        }
+      ]
+      scale: {
+        minReplicas: 1
+        maxReplicas: 1
+      }
     }
   }
 }
@@ -825,6 +900,8 @@ output ACA_ENVIRONMENT_IDENTITY_ID string = userAssignedIdentity.id
 output agent_APP_NAME string = agentApp.name
 output FRONTEND_APP_NAME string = frontendApp.name
 output OLLAMA_APP_NAME string = ollamaAppName
+output PLANNER_APP_NAME string = plannerGatewayApp.name
+output PLANNER_GATEWAY_FQDN string = plannerGatewayApp.properties.configuration.ingress.fqdn
 output NGINX_AUTH_PROXY_APP_NAME string = nginxAuthProxyApp.name
 output LOG_ANALYTICS_WORKSPACE_ID string = enableDebugging ? logAnalyticsWorkspace.id : ''
 output LOCATION string = location

@@ -1,6 +1,6 @@
 # Ignite Demo: Automatic Dashboard Generation Platform
 
-> **Status (Nov 2025)** – `azd up` provisions three Azure Container Apps (React frontend, FastAPI agent, Ollama GPU), shared Azure Files storage, Managed Identity, Application Insights, and Azure Container Registry. The GPU workload now pulls `llama3.1:8b` during rollout, and the frontend ships as its own Container App.
+> **Status (Nov 2025)** – `azd up` provisions three Azure Container Apps (React frontend, FastAPI agent, Ollama GPU), shared Azure Files storage, Managed Identity, Application Insights, and Azure Container Registry. The GPU workload now pulls `gemma2:27b` during rollout, and the frontend ships as its own Container App.
 
 - Latest tested services: `frontend`, `agent`, `ollama`
 - Infra as code: `infra/main.bicep` orchestrated via `azd`
@@ -53,7 +53,7 @@ azd env refresh
         v
 [ Ollama GPU Planner (ACA GPU profile) ]
     - /healthz, /api/generate style endpoints
-    - Init container pulls llama3.1:8b into Azure Files volume
+    - Init container pulls gemma2:27b into Azure Files volume
 
 [ Shared Resources ]
   - Azure Files (Ollama model cache + agent artifacts share)
@@ -85,7 +85,7 @@ Frontend calls the public ingress for the agent service; the agent reaches the G
 |---------|------------|---------|--------------|
 | `frontend` | React + Vite + Plotly | Upload CSVs, call `/dashboard/*`, render HTML | `VITE_AGENT_BASE_URL` (set by azd) |
 | `agent` | Python 3.11 + FastAPI | Profiling, planner orchestration, Plotly renderer | `OLLAMA_HOST`, `OLLAMA_MODEL`, `PLAN_SCHEMA_PATH` |
-| `ollama` | `ollama/ollama` base + init container | Hosts llama3.1:8b on ACA GPU profile | `OLLAMA_CONTEXT_LENGTH`, Azure Files secrets |
+| `ollama` | `ollama/ollama` base + init container | Hosts gemma2:27b on ACA GPU profile | `OLLAMA_CONTEXT_LENGTH`, Azure Files secrets |
 | `nginx-auth-proxy` (optional) | NGINX | Legacy ingress proxy retained for fallback | TLS/Basic Auth secrets |
 
 `azure.yaml` wires each service to its Dockerfile/context so `azd package` can build/push consistently.
@@ -142,7 +142,7 @@ python -m uvicorn app.main:app --reload --port 8000
 ```
 
 - Upload CSVs: `POST http://localhost:8000/upload`
-- Point to the remote GPU: set `OLLAMA_HOST` and `OLLAMA_MODEL=llama3.1:8b`
+- Point to the remote GPU: set `OLLAMA_HOST` and `OLLAMA_MODEL=gemma2:27b`
 
 ### Agent Service (Docker image)
 
@@ -160,7 +160,7 @@ uvicorn app.service:app --port 8801 --reload
 docker run --rm -it ^
   -p 8080:8080 ^
   -e ORCH_PLANNER_GATEWAY_HOST="http://host.docker.internal:8801" ^
-  -e OLLAMA_MODEL="llama3.1:8b" ^
+  -e OLLAMA_MODEL="gemma2:27b" ^
   -e AZURE_STORAGE_CONNECTION_STRING="UseDevelopmentStorage=true;" ^
   agent-service:dev
 ```
@@ -187,7 +187,7 @@ python -m venv .venv
 pip install -r requirements.txt
 $env:OLLAMA_MODE='remote'
 $env:OLLAMA_HOST='https://ollama-<env>...azurecontainerapps.io'
-$env:OLLAMA_MODEL='llama3.1:8b'
+$env:OLLAMA_MODEL='gemma2:27b'
 uvicorn app.service:app --port 11434 --reload
 ```
 
@@ -197,7 +197,7 @@ uvicorn app.service:app --port 11434 --reload
 - Model layers are pre-pulled in the ACA init container:
 
   ```bicep
-  args: ['pull', 'llama3.1:8b']
+  args: ['pull', 'gemma2:27b']
   ```
 
 - Azure Files (`ollamaModelStorageName`) keeps the model cache between revisions.
@@ -240,7 +240,7 @@ Tips: rerun `azd provision` only when `infra/` changes, and prefer `azd down` fo
 
 ## Model & Data Handling
 
-- **Default model**: `llama3.1:8b` everywhere (init container + application defaults + playground docs).
+- **Default model**: `gemma2:27b` everywhere (init container + application defaults + playground docs).
 - **Context tuning**: `OLLAMA_CONTEXT_LENGTH=32768`, `OLLAMA_KEEP_ALIVE=15m` to keep JSON prompts responsive.
 - **Inputs**: Profiling metadata (dtype, null %, cardinality, basic correlations) grounds each plan request.
 - **Dataset guardrails**: ≤100k rows for full profiling, sample larger files to 50k rows, top-k for high-cardinality categorical fields.

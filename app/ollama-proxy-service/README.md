@@ -37,7 +37,7 @@ Playground/OllamaStructuredJson/
 - Normalize all agent calls through this service instead of hitting Ollama directly. Use `/json` for structured tool outputs (e.g., dashboard plans, tool payloads) and `/general` for conversational flows. `/plan` remains for backward compatibility.
 - Keep the HTTP surface compatible with the future ACA GPU container: `/json` and `/general` should behave identically whether running locally or in ACA.
 - When adding new chart operations or metadata fields, update `schemas/dashboard_plan.schema.json` and ping the Rendering + Frontend agents.
-- Store large model artifacts outside the repo (use Azure Files or Blob). For local dev, document how to run `ollama pull llama3.1:8b` in this folder.
+- Store large model artifacts outside the repo (use Azure Files or Blob). For local dev, document how to run `ollama pull gemma2:27b` in this folder.
 - Use environment variables (`OLLAMA_HOST`, `OLLAMA_API_PATH`, `OLLAMA_MODEL`, `PLAN_SCHEMA_PATH`) instead of hardcoded values so azd can inject settings later. The gateway defaults to `/api/generate`; override `OLLAMA_API_PATH` (or set it to `""`) if the upstream exposes a different surface.
 - Structured-output toggles: `OLLAMA_SEND_JSON_SCHEMA=true` (default) enables sending the DashboardPlan schema in the `format` payload, while `OLLAMA_FORCE_JSON_MODE=true` keeps JSON-mode fallback when schema transmission is disabled.
 
@@ -71,7 +71,7 @@ Even though this agent ultimately targets a GPU-backed ACA container, you can st
 
    ```powershell
    $env:OLLAMA_HOST="https://<gpu-app-fqdn>"
-   $env:OLLAMA_MODEL="llama3.1:8b"
+   $env:OLLAMA_MODEL="gemma2:27b"
    python -m app.client --profile samples/profile.json
    ```
 

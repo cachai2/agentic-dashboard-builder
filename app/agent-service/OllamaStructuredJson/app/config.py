@@ -35,7 +35,7 @@ class Settings(BaseSettings):
         description="Model identifier passed to the Ollama API.",
     )
     ollama_timeout_seconds: float = Field(
-        default=600,
+        default=90,
         validation_alias="OLLAMA_TIMEOUT_SECONDS",
         description="HTTP timeout for Ollama completions.",
     )
