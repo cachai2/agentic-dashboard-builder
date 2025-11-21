@@ -42,12 +42,24 @@ The mock service listens on `http://localhost:8800` and mirrors the backend cont
 
 | Env var | Default | Purpose |
 | --- | --- | --- |
-| `VITE_USE_MOCK` | `true` | Switch between the in-app mock planner and REST client. |
-| `VITE_API_BASE_URL` | `http://localhost:8800` | REST endpoint base for `/upload`, `/dashboard/status`, `/dashboard/view`. |
+| `VITE_USE_MOCK` | `false` (prod) | Switch between the in-app mock planner and REST client. Set to `true` only for offline demos. |
+| `VITE_API_BASE_URL` | `https://agent-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io` (prod) | REST endpoint base for `/upload`, `/dashboard/status`, `/dashboard/view`. Local fallback remains `http://localhost:8800`. |
 | `VITE_ENABLE_AGENT_FRAMEWORK` | `false` | Surfaces a hero badge to show when the Agent Framework integration is live. |
 | `VITE_ENABLE_APP_INSIGHTS` | `false` | Enables the Application Insights hook (wire the SDK + connection string when ready). |
 
 Feature flag values are rendered in the hero pill so demo crews always know what data source is backing the UI.
+
+- `.env.production` pins the planner to the Azure agent (`VITE_API_BASE_URL`) and keeps `VITE_USE_MOCK=false`.
+- `.env.local.example` mirrors those settings—copy it to `.env.local` when you want local dev to speak to Azure.
+- Override `VITE_USE_MOCK=true` in `.env.local` whenever you need the in-browser mock planner for offline demos.
+
+## Azure deployment checklist
+
+1. **Frontend env vars** – deploy `VITE_API_BASE_URL=https://agent-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io` and `VITE_USE_MOCK=false` via your Container App/App Service config (matching `.env.production`).
+2. **Agent CORS** – ensure `ORCH_ALLOWED_ORIGINS` (or the defaults baked into `agent_orchestrator.api.app`) include both the Azure frontend URL and `http://localhost:5173` for local smoke tests.
+3. **Agent → Ollama** – configure `ORCH_PLANNER_GATEWAY_HOST=https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io` and any required credentials on the agent container.
+4. **Restart containers** – bounce the Azure frontend, agent, and Ollama apps after changing env vars so settings reload.
+5. **Smoke test** – upload a CSV from the Azure frontend and confirm `/upload` calls hit the Azure agent domain without CORS/network errors.
 
 ## Testing & quality
 

@@ -443,7 +443,37 @@ module agentService './modules/container-app.bicep' = {
     }
   }
 }
+
+### Azure Files mount for artifacts
+
+The orchestrator continues to dump planner payloads and future dashboard assets into `app/agent-service/artifacts`. The main Bicep template now provisions an Azure Files share (`agent-artifacts`) in the artifacts storage account and mounts it at `/app/agent-service/artifacts` so these diagnostics persist across revisions.
+
+```bicep
+resource agentArtifactsStorage 'Microsoft.App/managedEnvironments/storages@2025-02-02-preview' = {
+    parent: containerAppsEnvironment
+    name: 'agent-artifacts-storage'
+    properties: {
+        azureFile: {
+            accountName: artifactStorageAccount.name
+            accountKey: listKeys(artifactStorageAccount.id, '2022-09-01').keys[0].value
+            shareName: 'agent-artifacts'
+            accessMode: 'ReadWrite'
+        }
+    }
+}
+
+volumeMounts: concat(
+    agentVolumeMounts,
+    [
+        {
+            volumeName: 'agent-artifacts'
+            mountPath: '/app/agent-service/artifacts'
+        }
+    ]
+)
 ```
+
+If you relocate the artifacts directory, update the mount path and the helper’s default directories so planner dumps keep flowing into the durable share.
 
 Grant the container app’s managed identity `Storage Blob Data Contributor` on the storage account so it can upload/download blobs:
 
@@ -473,5 +503,6 @@ If you prefer connection-string auth (not recommended for production), generate 
 3. Ensure the Python image includes `azure-storage-blob` and `azure-identity`.
 4. Hit your pipeline endpoint: it should upload datasets to `raw/<run-id>/` and persist results/dashboards under `runs/<run-id>/`.
 5. (Optional) Validate the SAS URLs produced by `generate_artifact_read_url` open successfully for the configured expiry period.
+6. Use `az containerapp exec` (or the portal console) to confirm `/app/agent-service/artifacts` is writable and the Azure Files share receives the new planner payload files.
 
 With these pieces in place you can drop the storage tool into any other project and keep the CSV artifacts workflow identical to the Ignite demo.

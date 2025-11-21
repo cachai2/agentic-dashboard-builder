@@ -103,7 +103,57 @@ _Last updated: 2025-11-20_
 | **NF-05** | Security scanning | Ensure dependencies stay patched | Run `pip-audit` / `bandit` within gateway + orchestrator (same terminal is fine) | `pip-audit` exits clean or documented issues filed |
 | **NF-06** | Remote outage handling | Understand orchestrator behavior when the live Ollama service is unreachable | **Terminal A:** keep gateway targeting ACA. **Terminal B:** block outbound access (firewall/offline), run CLI, and observe failure telemetry (no local fallback) | Workflow surfaces clear planner outage errors; no silent fallbacks |
 
-## 8. Reporting & Sign-off
+## 8. Local Frontend + Agent E2E (Remote Ollama)
+
+### 8.1 Objectives
+
+- Validate that the React frontend and FastAPI agent can both run locally while planner traffic goes to the Azure-hosted Ollama deployment via the gateway.
+- Catch regressions in upload UX, dashboard preview rendering, and agent HTTP contracts before shipping a new demo build.
+- Ensure environment hints and `.env` samples accurately describe the mixed local/remote workflow.
+
+### 8.2 Prerequisites
+
+| Requirement | Notes |
+| --- | --- |
+| Node.js 20+, npm 10+ | For `app/frontend-service` dev server |
+| Python 3.11 + virtualenv | For `app/agent-service/AgentOrchestrator` FastAPI app |
+| Azure Ollama FQDN | e.g. `https://ollama-ignite-demo-evdeo...azurecontainerapps.io` |
+| Planner gateway schema | `app/agent-service/OllamaStructuredJson/ChartJsonSpec.md` kept in sync |
+| Local storage option | Either Azurite (`UseDevelopmentStorage=true;`) or real storage connection string |
+
+Set the following environment variables before launch (sample for PowerShell):
+
+```powershell
+$env:OLLAMA_MODE='remote'
+$env:OLLAMA_HOST='https://ollama-ignite-demo-evdeo...azurecontainerapps.io'
+$env:PLAN_SCHEMA_PATH='schemas/dashboard_plan.schema.json'
+$env:ORCH_PLANNER_GATEWAY_HOST='http://127.0.0.1:8801'
+$env:AZURE_STORAGE_CONNECTION_STRING='UseDevelopmentStorage=true;'
+$env:VITE_AGENT_BASE_URL='http://localhost:8000'
+```
+
+### 8.3 Launch Sequence
+
+1. **Terminal A – Gateway:** `cd app\agent-service\OllamaStructuredJson; python -m venv .venv; .venv\Scripts\activate; pip install -r requirements.txt; uvicorn app.service:app --port 8801 --reload`. Confirm logs show `mode=remote` and the Azure host.
+2. **Terminal B – Agent API:** `cd app\agent-service\AgentOrchestrator; python -m venv .venv; .venv\Scripts\activate; pip install -e .; uvicorn agent_orchestrator.api.app:app --port 8000 --reload`. Verify `/docs` loads locally.
+3. **Terminal C – Frontend:** `cd app\frontend-service; npm install; npm run dev`. Ensure the dev server prints the local URL (default `http://localhost:5173`).
+4. **Optional Terminal D – Azurite:** If you do not use the connection string, run `azurite --blobHost 0.0.0.0 --blobPort 10000` and update `AZURE_STORAGE_CONNECTION_STRING` with the Azurite hostname.
+5. Record timestamps for each startup in the test log; these numbers help track cold-start regressions in future runs.
+
+### 8.4 Local E2E Test Matrix
+
+| ID | Scenario | Objective | Steps | Expected |
+| --- | --- | --- | --- | --- |
+| **FE-01** | Happy-path upload | Validate upload → profile → plan → render when all services are local except Ollama | In browser hit frontend dev URL; upload `samples/revenue.csv`; watch Network tab for `/upload`, `/dashboard/plan`, `/dashboard/view` | Upload returns 202/200; plan request hits gateway (Terminal A logs show remote call); dashboard renders in UI |
+| **FE-02** | Planner outage surfacing | Ensure frontend surfaces planner errors while agent keeps responding | Stop Terminal A (gateway) after frontend upload starts; repeat upload | Agent returns 502/503 JSON with error message; frontend shows non-blocking error toast |
+| **FE-03** | Large CSV guardrails | Confirm frontend enforces size guidance and agent sampling | Upload Citi Bike sample (~large rows); monitor agent logs for sampling notice | Frontend warning banner appears; agent logs `csv_profiler_max_rows` clamp |
+| **FE-04** | Dashboard refresh | Validate that refreshing the dashboard page reuses cached artifacts | Complete FE-01, then refresh browser; ensure agent storage has existing artifact; no new planner call should appear in Terminal A | Gateway logs show zero new `/json` requests; frontend fetches `/dashboard/view?session=<id>` successfully |
+| **FE-05** | Cross-origin checks | Verify CORS headers allow frontend ↔ agent calls | Inspect browser devtools for each API call; confirm `Access-Control-Allow-Origin` matches dev server | No CORS errors; retries not triggered |
+| **FE-06** | Telemetry correlation | Ensure session IDs from frontend propagate to gateway logs | Capture session ID embedded in frontend response; search for same ID in agent + gateway logs | IDs match, enabling trace stitching |
+
+Log pass/fail for each FE test alongside the existing GW/ORCH entries so regressions are traceable across the full stack.
+
+## 9. Reporting & Sign-off
 
 - Track execution status in `todo.md` or Azure Boards, referencing test IDs above.
 - For every failure, record `TestID`, impacted component (gateway, orchestrator, storage, frontend harness, etc.), environment, and the exact command or HTTP request that triggered it so we can grep logs quickly.

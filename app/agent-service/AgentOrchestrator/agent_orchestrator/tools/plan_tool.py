@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from time import perf_counter
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
 
 import jsonschema
 from ..settings import get_settings
@@ -23,26 +23,50 @@ except ImportError:  # pragma: no cover
 
 import httpx
 
-try:
-    from OllamaStructuredJson.app.augmentations import augment_plan
-    from OllamaStructuredJson.app.builder import compute_prompt_hash, render_prompt
-    from OllamaStructuredJson.app.config import Settings as PlannerSettings
-    from OllamaStructuredJson.app.validator import PlanValidator
-except ModuleNotFoundError:  # pragma: no cover - fallback to the Playground namespace dynamically
-    from importlib import import_module
 
-    _builder_module = import_module("Playground.OllamaStructuredJson.app.builder")
-    compute_prompt_hash = _builder_module.compute_prompt_hash
-    render_prompt = _builder_module.render_prompt
+def _load_planner_modules():
+    """Resolve planner helpers across the new and legacy package layouts."""
 
-    _config_module = import_module("Playground.OllamaStructuredJson.app.config")
-    PlannerSettings = _config_module.Settings
+    try:
+        from ollama_proxy_service.app.augmentations import augment_plan as _augment
+        from ollama_proxy_service.app.builder import compute_prompt_hash as _hash, render_prompt as _render
+        from ollama_proxy_service.app.client import OllamaClient as _Client
+        from ollama_proxy_service.app.config import Settings as _PlannerSettings
+        from ollama_proxy_service.app.validator import PlanValidator as _Validator
 
-    _augment_module = import_module("Playground.OllamaStructuredJson.app.augmentations")
-    augment_plan = _augment_module.augment_plan
+        return _augment, _hash, _render, _PlannerSettings, _Validator, _Client
+    except ModuleNotFoundError:
+        try:
+            from OllamaStructuredJson.app.augmentations import augment_plan as _augment
+            from OllamaStructuredJson.app.builder import compute_prompt_hash as _hash, render_prompt as _render
+            from OllamaStructuredJson.app.client import OllamaClient as _Client
+            from OllamaStructuredJson.app.config import Settings as _PlannerSettings
+            from OllamaStructuredJson.app.validator import PlanValidator as _Validator
 
-    _validator_module = import_module("Playground.OllamaStructuredJson.app.validator")
-    PlanValidator = _validator_module.PlanValidator
+            return _augment, _hash, _render, _PlannerSettings, _Validator, _Client
+        except ModuleNotFoundError:  # pragma: no cover - fallback to the Playground namespace dynamically
+            from importlib import import_module
+
+            _builder_module = import_module("Playground.OllamaStructuredJson.app.builder")
+            _hash = _builder_module.compute_prompt_hash
+            _render = _builder_module.render_prompt
+
+            _config_module = import_module("Playground.OllamaStructuredJson.app.config")
+            _PlannerSettings = _config_module.Settings
+
+            _augment_module = import_module("Playground.OllamaStructuredJson.app.augmentations")
+            _augment = _augment_module.augment_plan
+
+            _validator_module = import_module("Playground.OllamaStructuredJson.app.validator")
+            _Validator = _validator_module.PlanValidator
+
+            _client_module = import_module("Playground.OllamaStructuredJson.app.client")
+            _Client = _client_module.OllamaClient
+
+            return _augment, _hash, _render, _PlannerSettings, _Validator, _Client
+
+
+augment_plan, compute_prompt_hash, render_prompt, PlannerSettings, PlanValidator, GatewayClient = _load_planner_modules()
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +120,9 @@ class StructuredPlanner:
         self._model_name = planner_settings.ollama_model
         self._mock_plan_path = _resolve_mock_plan_path()
         self._request_dump_dir = settings.planner_request_dump_dir
+        self._gateway_settings = planner_settings
+        self._embedded_client_cls: Type[Any] | None = GatewayClient if isinstance(GatewayClient, type) else None
+        self._embedded_client: Any | None = None
 
     def generate(self, profile_summary: Dict[str, Any], session_id: Optional[str]) -> Dict[str, Any]:
         prompt_bundle = render_prompt(profile_summary, prompt_version=self._prompt_version)
@@ -132,6 +159,22 @@ class StructuredPlanner:
         raise RuntimeError("Planner failed unexpectedly") from last_error
 
     def _invoke_gateway(self, prompt_bundle: Dict[str, str], session_id: Optional[str]) -> str:
+        remote_error: Exception | None = None
+        if self._gateway_url:
+            try:
+                return self._invoke_remote_gateway(prompt_bundle, session_id)
+            except Exception as exc:  # pragma: no cover - depends on deployment wiring
+                remote_error = exc
+                logger.warning("Remote planner gateway failed; falling back to embedded client", exc_info=exc)
+
+        if self._embedded_client_cls is not None:
+            return self._invoke_embedded_gateway(prompt_bundle)
+
+        if remote_error:
+            raise remote_error
+        raise RuntimeError("Planner gateway unavailable")
+
+    def _invoke_remote_gateway(self, prompt_bundle: Dict[str, str], session_id: Optional[str]) -> str:
         payload = {
             "messages": [
                 {"role": "system", "content": prompt_bundle["system"]},
@@ -155,6 +198,30 @@ class StructuredPlanner:
         if not raw:
             raise RuntimeError("Gateway response missing content")
         return raw
+
+    def _invoke_embedded_gateway(self, prompt_bundle: Dict[str, str]) -> str:
+        client = self._ensure_embedded_client()
+        messages = [
+            {"role": "system", "content": prompt_bundle["system"]},
+            {"role": "user", "content": prompt_bundle["user"]},
+        ]
+        parsed, raw, _ = client.chat_json(
+            messages,
+            schema=self._validator.schema,
+            model=self._model_name,
+            temperature=0.1,
+            stream=False,
+        )
+        if not raw:
+            raw = json.dumps(parsed)
+        return raw
+
+    def _ensure_embedded_client(self) -> Any:
+        if self._embedded_client is None:
+            if self._embedded_client_cls is None:
+                raise RuntimeError("Embedded planner client unavailable")
+            self._embedded_client = self._embedded_client_cls(self._gateway_settings)
+        return self._embedded_client
 
     def _build_success(
         self,
@@ -230,8 +297,12 @@ def _resolve_mock_plan_path() -> Path:
     candidates = [
         repo_root / "OllamaStructuredJson" / "samples" / "mock_plan.json",
         repo_root / "agent-service" / "OllamaStructuredJson" / "samples" / "mock_plan.json",
+        repo_root / "ollama_proxy_service" / "samples" / "mock_plan.json",
+        repo_root / "ollama-proxy-service" / "samples" / "mock_plan.json",
         repo_root.parent / "OllamaStructuredJson" / "samples" / "mock_plan.json",
         repo_root.parent / "agent-service" / "OllamaStructuredJson" / "samples" / "mock_plan.json",
+        repo_root.parent / "ollama_proxy_service" / "samples" / "mock_plan.json",
+        repo_root.parent / "ollama-proxy-service" / "samples" / "mock_plan.json",
         repo_root.parent / "Playground" / "OllamaStructuredJson" / "samples" / "mock_plan.json",
     ]
     for candidate in candidates:

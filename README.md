@@ -56,7 +56,7 @@ azd env refresh
     - Init container pulls llama3.1:8b into Azure Files volume
 
 [ Shared Resources ]
-  - Azure Files (model cache + CSV staging)
+  - Azure Files (Ollama model cache + agent artifacts share)
   - Azure Storage + ACR + Application Insights
   - User-assigned Managed Identity (registry + storage auth)
 ```
@@ -72,7 +72,7 @@ Frontend calls the public ingress for the agent service; the agent reaches the G
 | `app/` | FastAPI agent (upload/profile/plan/render) + shared schemas/prompt assets |
 | `app/frontend-service/` | React + Vite SPA for upload + dashboard visualization |
 | `app/ollama-service/` | Minimal Docker context for the ACA Ollama container |
-| `app/agent-service/` | Agent Framework experiments (CsvProfiler, ChartRendering, structured JSON playground) |
+| `app/agent-service/` | Agent Orchestrator, shared agents (CsvProfiler, ChartRendering, structured JSON playground), and the Docker context for the CPU service |
 | `infra/` | Bicep modules composed by `infra/main.bicep` |
 | `Playground/OllamaStructuredJson/` | Standalone FastAPI service used to test structured JSON prompts |
 | `docs/`, `General Architecture.md`, `More Specific Architecture.md` | Deep-dive design notes and schemas |
@@ -143,6 +143,31 @@ python -m uvicorn app.main:app --reload --port 8000
 
 - Upload CSVs: `POST http://localhost:8000/upload`
 - Point to the remote GPU: set `OLLAMA_HOST` and `OLLAMA_MODEL=llama3.1:8b`
+
+### Agent Service (Docker image)
+
+```powershell
+# build the image from the repo root
+docker build -t agent-service:dev app/agent-service
+
+# run the planner gateway locally (see Playground/OllamaStructuredJson)
+cd app\agent-service\OllamaStructuredJson
+$env:OLLAMA_MODE='remote'
+$env:OLLAMA_HOST='https://ollama-<env>...azurecontainerapps.io'
+uvicorn app.service:app --port 8801 --reload
+
+# in another terminal, launch the agent container
+docker run --rm -it ^
+  -p 8080:8080 ^
+  -e ORCH_PLANNER_GATEWAY_HOST="http://host.docker.internal:8801" ^
+  -e OLLAMA_MODEL="llama3.1:8b" ^
+  -e AZURE_STORAGE_CONNECTION_STRING="UseDevelopmentStorage=true;" ^
+  agent-service:dev
+```
+
+- The container entrypoint (`docker-entrypoint.sh`) automatically starts `uvicorn agent_orchestrator.api.app:app --host 0.0.0.0 --port 8080`. Override it by passing your own command (`docker run ... bash`) or by setting `APP_MODULE`, `HOST`, or `PORT` environment variables.
+- When you prefer to keep storage traffic inside Docker, run Azurite on a shared network and update the connection string with the container hostname (e.g. `BlobEndpoint=http://azurite:10000/devstoreaccount1`). Otherwise `UseDevelopmentStorage=true;` targets a host-running Azurite instance.
+- Planner traffic is routed through `ORCH_PLANNER_GATEWAY_HOST`; use `host.docker.internal` when the gateway runs on your workstation, or switch to the container name when both run on the same Docker network.
 
 ### Frontend (`app/frontend-service`)
 

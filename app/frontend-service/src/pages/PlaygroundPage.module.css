@@ -63,6 +63,18 @@
   gap: 24px;
 }
 
+.modeBadge {
+  margin: 8px 32px -8px;
+  padding: 4px 12px;
+  display: inline-flex;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
 @media (max-width: 960px) {
   .layout {
     grid-template-columns: 1fr;
@@ -84,5 +96,9 @@
 
   .dashboardPanel {
     max-height: none;
+  }
+
+  .modeBadge {
+    margin: 8px 20px -8px;
   }
 }

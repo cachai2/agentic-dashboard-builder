@@ -56,12 +56,36 @@ BIKE_TYPES = ["classic_bike", "electric_bike"]
 MEMBERSHIP = ["member", "casual"]
 
 
-def write_csv(path: Path, fieldnames: Iterable[str], rows: Iterator[dict[str, object]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as fh:
+def _next_available_path(path: Path) -> Path:
+    if not path.exists():
+        return path
+    stem, suffix = path.stem, path.suffix
+    counter = 2
+    while True:
+        candidate = path.with_name(f"{stem}{counter}{suffix}")
+        if not candidate.exists():
+            return candidate
+        counter += 1
+
+
+def write_csv(
+    path: Path,
+    fieldnames: Iterable[str],
+    rows: Iterator[dict[str, object]],
+    *,
+    overwrite: bool = False,
+) -> Path:
+    target_path = path if overwrite else _next_available_path(path)
+    if target_path != path and not overwrite:
+        print(
+            f"Existing sample {path.name} detected; writing new copy to {target_path.name}."
+        )
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    with target_path.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+    return target_path
 
 
 def generate_superstore_rows() -> Iterator[dict[str, object]]:

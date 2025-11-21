@@ -26,8 +26,14 @@ param enableVnetIntegration bool = false
 @description('Enable persistent volume mount for the Ollama GPU service')
 param enableOllamaModelVolume bool = true
 
-@description('Base URL (no /json) for the OllamaStructuredJson gateway consumed by the orchestrator')
-param plannerGatewayHost string = 'http://127.0.0.1:11434'
+@description('Optional override for the frontend API base URL; defaults to the deployed agent FQDN when omitted')
+param agentApiBaseUrl string = ''
+
+@description('Public URL for the frontend used for CORS allowance')
+param frontendPublicUrl string = 'https://frontend-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io'
+
+@description('Comma-delimited list of allowed origins for the orchestrator API')
+param agentAllowedOrigins string = frontendPublicUrl
 
 var baseName = toLower('${environmentName}-${resourceToken}')
 var sanitized = toLower(replace(replace(environmentName, '-', ''), '_', ''))
@@ -37,6 +43,9 @@ var storageAccountName = take('st${sanitizedBase}${resourceToken}000', 24)
 var storageAccountSmbName = take('st${sanitizedBase}${resourceToken}100', 24)
 var artifactStorageAccountName = take('st${sanitizedBase}${resourceToken}200', 24)
 var agentArtifactsContainerName = 'agent-artifacts'
+var agentArtifactsShareName = 'agent-artifacts'
+var agentArtifactsVolumeName = 'agent-artifacts'
+var agentArtifactsMountPath = '/app/agent-service/artifacts'
 var identityName = 'id-${baseName}'
 var containerAppsEnvironmentName = 'cae-${baseName}'
 var ollamaAppName = 'ollama-${baseName}'
@@ -45,7 +54,25 @@ var frontendAppName = 'frontend-${baseName}'
 var nginxAuthProxyAppName = 'proxy-${baseName}'
 var logAnalyticsWorkspaceName = 'log-${baseName}'
 var storagePrivateLinkFqdn = '${storageAccountName}.privatelink.file.${environment().suffixes.storage}'
-var seedScript = format('az account set --subscription {0}\nsleep 60\naz acr import --resource-group {1} --name {2} --source mcr.microsoft.com/azuredocs/containerapps-helloworld:latest --image agent-agent:latest\naz acr import --resource-group {1} --name {2} --source mcr.microsoft.com/azuredocs/containerapps-helloworld:latest --image ollama:latest\naz acr import --resource-group {1} --name {2} --source mcr.microsoft.com/azuredocs/containerapps-helloworld:latest --image nginx-auth-proxy:latest', subscription().subscriptionId, resourceGroup().name, containerRegistryName)
+var seedScriptLines = [
+  '#!/bin/bash'
+  'set -euo pipefail'
+  ''
+  format('az account set --subscription {0}', subscription().subscriptionId)
+  ''
+  'echo "[seed-acr-images] importing agent-agent:latest"'
+  format('az acr import --resource-group {0} --name {1} --source mcr.microsoft.com/azuredocs/containerapps-helloworld:latest --image agent-agent:latest --force --only-show-errors --output none', resourceGroup().name, containerRegistryName)
+  ''
+  'echo "[seed-acr-images] importing ollama:latest"'
+  format('az acr import --resource-group {0} --name {1} --source mcr.microsoft.com/azuredocs/containerapps-helloworld:latest --image ollama:latest --force --only-show-errors --output none', resourceGroup().name, containerRegistryName)
+  ''
+  'echo "[seed-acr-images] importing nginx-auth-proxy:latest"'
+  format('az acr import --resource-group {0} --name {1} --source mcr.microsoft.com/azuredocs/containerapps-helloworld:latest --image nginx-auth-proxy:latest --force --only-show-errors --output none', resourceGroup().name, containerRegistryName)
+  ''
+  'echo "[seed-acr-images] complete"'
+]
+var seedScript = join(seedScriptLines, '\n')
+var artifactStorageConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${artifactStorageAccount.name};AccountKey=${artifactStorageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
 var logAnalyticsWorkspaceId = resourceId('Microsoft.OperationalInsights/workspaces', logAnalyticsWorkspaceName)
 var containerAppsEnvironmentBaseProperties = {
   workloadProfiles: [
@@ -240,6 +267,20 @@ resource artifactContainer 'Microsoft.Storage/storageAccounts/blobServices/conta
   name: agentArtifactsContainerName
   properties: {
     publicAccess: 'None'
+  }
+}
+
+resource artifactFileService 'Microsoft.Storage/storageAccounts/fileServices@2023-01-01' = {
+  parent: artifactStorageAccount
+  name: 'default'
+}
+
+resource agentArtifactsShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-01-01' = {
+  parent: artifactFileService
+  name: agentArtifactsShareName
+  properties: {
+    enabledProtocols: 'SMB'
+    shareQuota: 100
   }
 }
 
@@ -445,6 +486,19 @@ resource ollamaModelSmbStorage 'Microsoft.App/managedEnvironments/storages@2025-
   }
 }
 
+resource agentArtifactsStorage 'Microsoft.App/managedEnvironments/storages@2025-02-02-preview' = {
+  parent: containerAppsEnvironment
+  name: 'agent-artifacts-storage'
+  properties: {
+    azureFile: {
+      accountName: artifactStorageAccount.name
+      accountKey: listKeys(artifactStorageAccount.id, '2022-09-01').keys[0].value
+      shareName: agentArtifactsShare.name
+      accessMode: 'ReadWrite'
+    }
+  }
+}
+
 resource acrPullAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   scope: containerRegistry
   name: guid(containerRegistry.id, userAssignedIdentity.name, 'AcrPull')
@@ -526,19 +580,24 @@ resource agentApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
     environmentId: containerAppsEnvironment.id
     workloadProfileName: 'Consumption'
     configuration: {
-       ingress: {
+      ingress: {
         external: true
-        targetPort: 3000
+        targetPort: 8080
         transport: 'Auto'
         allowInsecure: true
       }
+      secrets: [
+        {
+          name: 'artifact-storage-connection-string'
+          value: artifactStorageConnectionString
+        }
+      ]
       registries: [
         {
           server: containerRegistry.properties.loginServer
           identity: userAssignedIdentity.id
         }
       ]
-      secrets: []
     }
     template: {
       containers: [
@@ -548,11 +607,27 @@ resource agentApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
           env: [
             {
               name: 'OLLAMA_HOST'
-              value: 'http://${ollamaModule.outputs.OLLAMA_HOST}'
+              value: format('https://{0}', ollamaModule.outputs.OLLAMA_HOST)
             }
             {
               name: 'ORCH_PLANNER_GATEWAY_HOST'
-              value: plannerGatewayHost
+              value: format('https://{0}', ollamaModule.outputs.OLLAMA_HOST)
+            }
+            {
+              name: 'ORCH_ALLOWED_ORIGINS'
+              value: agentAllowedOrigins
+            }
+            {
+              name: 'AZURE_STORAGE_CONNECTION_STRING'
+              secretRef: 'artifact-storage-connection-string'
+            }
+            {
+              name: 'AGENT_STORAGE_ACCOUNT_NAME'
+              value: artifactStorageAccount.name
+            }
+            {
+              name: 'AGENT_STORAGE_CONTAINER_NAME'
+              value: agentArtifactsContainerName
             }
             {
               name: 'GITHUB_PERSONAL_ACCESS_TOKEN'
@@ -579,14 +654,31 @@ resource agentApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
             cpu: 2
             memory: '4Gi'
           }
-          volumeMounts: agentVolumeMounts
+          volumeMounts: concat(
+            agentVolumeMounts,
+            [
+              {
+                volumeName: agentArtifactsVolumeName
+                mountPath: agentArtifactsMountPath
+              }
+            ]
+          )
         }
       ]
       scale: {
         minReplicas: 1
         maxReplicas: 1
       }
-      volumes: agentVolumes
+      volumes: concat(
+        agentVolumes,
+        [
+          {
+            name: agentArtifactsVolumeName
+            storageType: 'AzureFile'
+            storageName: agentArtifactsStorage.name
+          }
+        ]
+      )
     }
   }
 }
@@ -626,6 +718,16 @@ resource frontendApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
         {
           name: 'frontend'
           image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          env: [
+            {
+              name: 'VITE_API_BASE_URL'
+              value: empty(agentApiBaseUrl) ? format('https://{0}', agentApp.properties.configuration.ingress.fqdn) : agentApiBaseUrl
+            }
+            {
+              name: 'VITE_USE_MOCK'
+              value: 'false'
+            }
+          ]
           resources: {
             cpu: 1
             memory: '2Gi'

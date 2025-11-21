@@ -15,9 +15,14 @@ dependencies = [
     "jsonschema>=4.19",
     "fastapi>=0.115",
     "python-multipart>=0.0.9",
-    "uvicorn>=0.30"
+    "uvicorn>=0.30",
+    "pandas>=2.2"
 ]
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["agent_orchestrator*"]
+exclude = ["artifacts*", "tests*"]

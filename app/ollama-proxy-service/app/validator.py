@@ -29,6 +29,10 @@ class PlanValidator:
         except orjson.JSONDecodeError as exc:  # pragma: no cover - vendor-specific path
             raise ValueError("Planner returned invalid JSON") from exc
 
+        description = plan.get("description")
+        if not isinstance(description, str) or not description.strip():
+            plan["description"] = "Auto-generated dashboard plan"
+
         jsonschema.validate(instance=plan, schema=self._schema)
         return plan
 

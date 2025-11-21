@@ -7,7 +7,7 @@ import type {
   UploadSession,
   WorkflowEventEntry,
 } from '@/types/orchestrator'
-import { plannerClient as defaultPlannerClient } from '@/services/plannerClient'
+import { plannerClient as defaultPlannerClient, plannerClientMode as defaultPlannerMode } from '@/services/plannerClient'
 import type { PlannerClient } from '@/services/types'
 import { trackEvent } from '@/utils/instrumentation'
 
@@ -28,7 +28,12 @@ const createDefaultErrors = (): PlannerErrors => ({
   events: null,
 })
 
-export const usePlannerSession = (client: PlannerClient = defaultPlannerClient) => {
+type PlannerMode = 'mock' | 'live' | 'custom'
+
+export const usePlannerSession = (
+  client: PlannerClient = defaultPlannerClient,
+  clientMode: PlannerMode = defaultPlannerMode,
+) => {
   const [session, setSession] = useState<UploadSession | null>(null)
   const [statusEntries, setStatusEntries] = useState<AgentStatusEntry[]>([])
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
@@ -137,5 +142,6 @@ export const usePlannerSession = (client: PlannerClient = defaultPlannerClient) 
     isUploading,
     errors,
     isComplete: Boolean(dashboard),
+    plannerMode: clientMode,
   }
 }

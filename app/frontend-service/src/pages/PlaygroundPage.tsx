@@ -14,7 +14,16 @@ import type { Step } from '@/components'
 import styles from './PlaygroundPage.module.css'
 
 export const PlaygroundPage = () => {
-  const { uploadCsv, statusEntries, dashboard, session, events, isUploading, errors } = usePlannerSession()
+  const {
+    uploadCsv,
+    statusEntries,
+    dashboard,
+    session,
+    events,
+    isUploading,
+    errors,
+    plannerMode,
+  } = usePlannerSession()
 
   const hasUploadStarted = Boolean(session) || isUploading
   const hasDashboard = Boolean(dashboard)
@@ -41,9 +50,13 @@ export const PlaygroundPage = () => {
     },
   ] as const
 
+  const plannerModeLabel =
+    plannerMode === 'mock' ? 'Mock planner (local data)' : plannerMode === 'live' ? 'Live planner (API)' : 'Custom planner'
+
   return (
     <div>
       <StepIndicator steps={steps} />
+      <div className={styles.modeBadge}>{plannerModeLabel}</div>
       <div className={styles.layout}>
         <div className={clsx(styles.column, styles.inputColumn)}>
           <Panel title={copy.uploader.title} helper={copy.uploader.helper}>

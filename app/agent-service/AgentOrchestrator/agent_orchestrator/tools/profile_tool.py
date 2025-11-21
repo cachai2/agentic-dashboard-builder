@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import logging
+import sys
+from importlib import import_module
+from importlib import util as importlib_util
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -19,14 +22,70 @@ except ImportError:  # pragma: no cover
 
         return decorator
 
-try:
-    from CsvProfilerAgent.app.profiling import ProfilingOptions, profile_csv_path
-except ModuleNotFoundError:  # pragma: no cover - fallback to the Playground namespace dynamically
-    from importlib import import_module
+def _get_agent_service_root() -> Optional[Path]:
+    for parent in Path(__file__).resolve().parents:
+        if parent.name == "agent-service":
+            return parent
+    return None
 
-    _profiling_module = import_module("Playground.CsvProfilerAgent.app.profiling")
-    ProfilingOptions = _profiling_module.ProfilingOptions
-    profile_csv_path = _profiling_module.profile_csv_path
+
+def _maybe_add_agent_service_root_to_sys_path() -> None:
+    """Ensure the agent-service directory (which hosts CsvProfilerAgent) is importable."""
+
+    agent_service_root = _get_agent_service_root()
+    if agent_service_root is None or not (agent_service_root / "CsvProfilerAgent").exists():
+        return
+
+    agent_service_root_str = str(agent_service_root)
+    if agent_service_root_str not in sys.path:
+        sys.path.insert(0, agent_service_root_str)
+
+
+def _load_local_profiling_module_from_source():
+    """Load CsvProfilerAgent directly from the repository without touching sys.path."""
+
+    agent_service_root = _get_agent_service_root()
+    if agent_service_root is None:
+        return None
+
+    profiling_file = agent_service_root / "CsvProfilerAgent" / "app" / "profiling.py"
+    if not profiling_file.exists():
+        return None
+
+    spec = importlib_util.spec_from_file_location("csv_profiler_local", profiling_file)
+    if spec is None or spec.loader is None:
+        return None
+
+    module = importlib_util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_profiling_module():
+    """Load the profiling module from the local package or Playground fallback."""
+
+    module_name = "CsvProfilerAgent.app.profiling"
+    try:
+        return import_module(module_name)
+    except ModuleNotFoundError:
+        _maybe_add_agent_service_root_to_sys_path()
+        try:
+            return import_module(module_name)
+        except ModuleNotFoundError:
+            local_module = _load_local_profiling_module_from_source()
+            if local_module is not None:
+                return local_module
+            try:
+                return import_module("Playground.CsvProfilerAgent.app.profiling")
+            except ModuleNotFoundError as exc:
+                raise ModuleNotFoundError(
+                    "CsvProfilerAgent package not found. Ensure app/agent-service is on PYTHONPATH or install the package."
+                ) from exc
+
+
+_profiling_module = _load_profiling_module()
+ProfilingOptions = _profiling_module.ProfilingOptions
+profile_csv_path = _profiling_module.profile_csv_path
 
 logger = logging.getLogger(__name__)
 

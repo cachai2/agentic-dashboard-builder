@@ -1,3 +1,21 @@
+Metadata-Version: 2.4
+Name: agent-orchestrator
+Version: 0.1.0
+Summary: Microsoft Agent Framework orchestrator that chains the Ignite playground agents.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: agent-framework-azure-ai>=0.1.0a0
+Requires-Dist: azure-identity>=1.17
+Requires-Dist: azure-storage-blob>=12.19
+Requires-Dist: httpx>=0.27
+Requires-Dist: orjson>=3.9
+Requires-Dist: pydantic>=2.7
+Requires-Dist: pydantic-settings>=2.5
+Requires-Dist: jsonschema>=4.19
+Requires-Dist: fastapi>=0.115
+Requires-Dist: python-multipart>=0.0.9
+Requires-Dist: uvicorn>=0.30
+
 # Agent Orchestrator (Microsoft Agent Framework)
 
 > Goal: provide a single Agent Framework entry point that can call each playground agent (CSV profiler, planner, renderer, frontend bridge, etc.) and stitch their outputs into a coherent Upload → Dashboard flow.
