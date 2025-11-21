@@ -169,19 +169,30 @@ def _detect_repo_root() -> Path | None:
 def _bootstrap_chart_rendering_packages() -> None:
     repo_root = _detect_repo_root()
     candidates: List[Path] = []
+
+    def _add_candidate(path: Path) -> None:
+        if path.exists():
+            candidates.append(path)
+
     if repo_root:
-        candidates.extend(
-            [
-                repo_root / "app" / "agent-service" / "ChartRenderingAgent",
-                repo_root / "ChartRenderingAgent",
-                repo_root / "Playground" / "ChartRenderingAgent",
-            ]
-        )
+        _add_candidate(repo_root / "app" / "agent-service" / "ChartRenderingAgent")
+        _add_candidate(repo_root / "ChartRenderingAgent")
+        _add_candidate(repo_root / "Playground" / "ChartRenderingAgent")
+
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        _add_candidate(parent / "ChartRenderingAgent")
+        _add_candidate(parent / "agent-service" / "ChartRenderingAgent")
+        _add_candidate(parent / "app" / "agent-service" / "ChartRenderingAgent")
+
+    inserted: set[str] = set()
     for candidate in candidates:
-        if candidate.exists():
-            path_str = str(candidate)
-            if path_str not in sys.path:
-                sys.path.insert(0, path_str)
+        path_str = str(candidate)
+        if path_str in inserted:
+            continue
+        inserted.add(path_str)
+        if path_str not in sys.path:
+            sys.path.insert(0, path_str)
 
 
 
