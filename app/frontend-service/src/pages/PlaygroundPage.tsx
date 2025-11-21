@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { copy } from '@/config/ui'
 import { usePlannerSession } from '@/hooks/usePlannerSession'
 import {
@@ -12,8 +12,9 @@ import {
   Uploader,
 } from '@/components'
 import type { Step } from '@/components'
-import { downloadDashboardHtml } from '@/utils/downloadDashboardHtml'
 import styles from './PlaygroundPage.module.css'
+
+type DownloadState = 'idle' | 'ready' | 'downloading' | 'downloaded'
 
 export const PlaygroundPage = () => {
   const {
@@ -26,8 +27,8 @@ export const PlaygroundPage = () => {
     errors,
     plannerMode,
   } = usePlannerSession()
-  const [isDownloadingDashboard, setIsDownloadingDashboard] = useState(false)
-  const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [downloadStateMap, setDownloadStateMap] = useState<Record<string, DownloadState>>({})
+  const [downloadErrorMap, setDownloadErrorMap] = useState<Record<string, string | null>>({})
 
   const hasUploadStarted = Boolean(session) || isUploading
   const hasDashboard = Boolean(dashboard)
@@ -57,27 +58,52 @@ export const PlaygroundPage = () => {
   const plannerModeLabel =
     plannerMode === 'mock' ? 'Mock planner (local data)' : plannerMode === 'live' ? 'Live planner (API)' : 'Custom planner'
 
-  useEffect(() => {
-    if (!dashboard) {
-      setDownloadError(null)
-      setIsDownloadingDashboard(false)
+  const downloadFilename = useMemo(() => {
+    if (!dashboard?.iframeUrl) {
+      return 'dashboard.html'
+    }
+    try {
+      const parsed = new URL(dashboard.iframeUrl)
+      const segments = parsed.pathname.split('/')
+      const lastSegment = segments.pop() || 'dashboard'
+      const safeSegment = lastSegment.replace(/[<>:"/\\|?*]+/g, '-')
+      return safeSegment.toLowerCase().endsWith('.html') ? safeSegment : `${safeSegment || 'dashboard'}.html`
+    } catch {
+      return 'dashboard.html'
     }
   }, [dashboard])
 
-  const handleDownloadDashboard = async () => {
-    if (!dashboard?.iframeUrl) return
-    setIsDownloadingDashboard(true)
-    setDownloadError(null)
+  const downloadKey = dashboard?.iframeUrl ?? ''
+  const downloadState: DownloadState = downloadKey ? downloadStateMap[downloadKey] ?? 'ready' : 'idle'
+  const downloadError = downloadKey ? downloadErrorMap[downloadKey] ?? null : null
+
+  const handleDownloadDashboard = () => {
+    if (!downloadKey || !dashboard?.iframeUrl) return
+    setDownloadErrorMap((prev) => ({ ...prev, [downloadKey]: null }))
+    setDownloadStateMap((prev) => ({ ...prev, [downloadKey]: 'downloading' }))
     try {
-      const fallbackName = session ? `dashboard-${session.sessionId}` : 'dashboard'
-      await downloadDashboardHtml(dashboard.iframeUrl, { suggestedName: fallbackName })
+      const anchor = document.createElement('a')
+      anchor.href = dashboard.iframeUrl
+      anchor.target = '_blank'
+      anchor.rel = 'noopener noreferrer'
+      anchor.download = downloadFilename
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      setDownloadStateMap((prev) => ({ ...prev, [downloadKey]: 'downloaded' }))
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to download dashboard HTML.'
-      setDownloadError(message)
-    } finally {
-      setIsDownloadingDashboard(false)
+      const message = error instanceof Error ? error.message : 'Failed to open dashboard download.'
+      setDownloadErrorMap((prev) => ({ ...prev, [downloadKey]: message }))
+      setDownloadStateMap((prev) => ({ ...prev, [downloadKey]: 'ready' }))
     }
   }
+
+  const downloadLabel =
+    downloadState === 'downloaded'
+      ? 'Downloaded'
+      : downloadState === 'downloading'
+        ? 'Opening…'
+        : 'Download HTML'
 
   const dashboardActions = dashboard?.iframeUrl ? (
     <div className={styles.dashboardActions}>
@@ -85,14 +111,17 @@ export const PlaygroundPage = () => {
         type="button"
         className={styles.downloadButton}
         onClick={handleDownloadDashboard}
-        disabled={isDownloadingDashboard}
+        disabled={downloadState === 'downloading'}
       >
-        {isDownloadingDashboard ? 'Preparing download…' : 'Download HTML'}
+        {downloadLabel}
       </button>
+      <span className={styles.downloadFilename}>{downloadFilename}</span>
       {downloadError ? (
         <span className={styles.downloadError}>{downloadError}</span>
+      ) : downloadState === 'downloaded' ? (
+        <span className={styles.downloadHint}>HTML opened in a new tab</span>
       ) : (
-        <span className={styles.downloadHint}>Saves the generated dashboard locally</span>
+        <span className={styles.downloadHint}>Opens the rendered HTML in a new tab</span>
       )}
     </div>
   ) : null

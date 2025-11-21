@@ -62,6 +62,14 @@ class SessionCoordinator:
             notes=metadata.notes,
         )
         record = await self._store.create_session(metadata=session_metadata, filename=sanitized_filename)
+        logger.info(
+            "Upload received",
+            extra={
+                "session_id": record.session_id,
+                "filename": sanitized_filename,
+                "scenario": metadata.scenario_name,
+            },
+        )
         dataset_path = await asyncio.to_thread(self._write_dataset, record.session_id, sanitized_filename, payload)
         blob_path, dataset_url = await self._persistence.persist_dataset(
             record.session_id,
@@ -122,12 +130,14 @@ class SessionCoordinator:
         return list(record.events), record.events_url
 
     def _schedule_workflow(self, session_id: str) -> None:
+        logger.info("Scheduling workflow", extra={"session_id": session_id})
         task = asyncio.create_task(self._run_workflow(session_id))
         self._background_tasks.add(task)
         task.add_done_callback(self._background_tasks.discard)
 
     async def _run_workflow(self, session_id: str) -> None:
         try:
+            logger.info("Workflow started", extra={"session_id": session_id})
             record = await self._store.get(session_id)
             if not record.dataset_local_path:
                 logger.error("Session %s missing dataset path", session_id)
@@ -149,6 +159,13 @@ class SessionCoordinator:
                 await self._record_step_state(session_id, step_id="planner", tool_name="Planner", state="success")
             else:
                 await self._persist_outputs(record, result)
+            logger.info(
+                "Workflow completed",
+                extra={
+                    "session_id": session_id,
+                    "plan_produced": bool(result.plan),
+                },
+            )
         except Exception:  # pragma: no cover - guardrail for background task
             logger.exception("Workflow execution failed for session %s", session_id)
             await self._record_step_state(session_id, step_id="planner", tool_name="Planner", state="error")
@@ -177,6 +194,14 @@ class SessionCoordinator:
             metadata=dict(existing.metadata) if existing else {},
         )
         await self._store.upsert_status(session_id, snapshot)
+        logger.info(
+            "Agent step update",
+            extra={
+                "session_id": session_id,
+                "step_id": step_id,
+                "state": state,
+            },
+        )
 
     def _convert_status(self, snapshot: AgentStepSnapshot) -> AgentStatusEntry:
         return AgentStatusEntry(
@@ -220,8 +245,23 @@ class SessionCoordinator:
         dashboard_html = ""
         if render_result:
             dashboard_html = render_result.html
+            logger.info(
+                "Renderer finished",
+                extra={
+                    "session_id": session_id,
+                    "renderer_source": render_result.source,
+                    "charts_rendered": len(render_result.sections),
+                    "charts_skipped": len(render_result.skipped),
+                },
+            )
         elif result.plan:
             dashboard_html = self._render_basic_dashboard(result.plan)
+            logger.info(
+                "Renderer fallback to preview",
+                extra={"session_id": session_id, "reason": "chart_renderer_unavailable"},
+            )
+        else:
+            logger.info("No renderer output", extra={"session_id": session_id, "reason": "plan_missing"})
 
         dashboard_artifacts = self._build_dashboard_artifacts(result.plan, render_result)
         dashboard_blob: str | None = None

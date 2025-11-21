@@ -101,6 +101,12 @@
   color: var(--color-error);
 }
 
+.downloadFilename {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+}
+
 .modeBadge {
   margin: 8px 32px -8px;
   padding: 4px 12px;

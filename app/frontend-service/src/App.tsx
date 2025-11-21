@@ -38,11 +38,11 @@ const App = () => {
     <main className="app-shell">
       <header className="hero">
         <div>
-          <p className="eyebrow">Agent Playground</p>
-          <h1>Upload · Watch · Present</h1>
+          <p className="eyebrow">Agentic Dashboard Generator</p>
+          <h1>Describe the brief. Let the agent design.</h1>
           <p className="subtitle">
-            Watch how the agent ingests your data, reasons over each objective, and assembles a
-            dashboard in real time.
+            Upload a CSV, and let the agent plan,
+            prioritize, and render the full dashboard narrative in real time.
           </p>
         </div>
         <div className="hero-controls">

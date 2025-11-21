@@ -89,6 +89,14 @@ def _build_workflow():
 
 @executor(id="profile_executor")
 async def _profile_executor(message: OrchestratorRequest, ctx: WorkflowContext[ProfileEnvelope]) -> None:
+    logger.info(
+        "Profiler agent started",
+        extra={
+            "session_id": message.session_id,
+            "dataset_name": message.dataset_name or message.csv_path.stem,
+            "max_rows": message.max_rows,
+        },
+    )
     profile = await asyncio.to_thread(
         profile_dataset,
         csv_path=str(message.csv_path),
@@ -111,6 +119,13 @@ async def _planner_executor(message: ProfileEnvelope, ctx: WorkflowContext[Never
         await ctx.yield_output(WorkflowResult(profile=message.profile, plan=None))
         return
 
+    logger.info(
+        "Planner agent started",
+        extra={
+            "session_id": message.request.session_id,
+            "profile_keys": list(message.profile.keys()),
+        },
+    )
     plan = await asyncio.to_thread(
         generate_dashboard_plan,
         profile_summary=message.profile,

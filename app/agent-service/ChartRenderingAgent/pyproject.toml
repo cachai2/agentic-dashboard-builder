@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chart-rendering-agent"
+version = "0.1.0"
+description = "Plotly-based dashboard rendering helpers for the agent orchestrator"
+requires-python = ">=3.11"
+authors = [{name = "Ignite Demo"}]
+license = {text = "MIT"}
+dependencies = []
+
+[tool.setuptools.packages.find]
+include = ["ChartRenderingAgent*"]
