@@ -14,7 +14,7 @@ import type { Step } from '@/components'
 import styles from './PlaygroundPage.module.css'
 
 export const PlaygroundPage = () => {
-  const { uploadCsv, statusEntries, dashboard, session, isUploading, error } = usePlannerSession()
+  const { uploadCsv, statusEntries, dashboard, session, events, isUploading, errors } = usePlannerSession()
 
   const hasUploadStarted = Boolean(session) || isUploading
   const hasDashboard = Boolean(dashboard)
@@ -47,15 +47,17 @@ export const PlaygroundPage = () => {
       <div className={styles.layout}>
         <div className={clsx(styles.column, styles.inputColumn)}>
           <Panel title={copy.uploader.title} helper={copy.uploader.helper}>
-            <Uploader isUploading={isUploading} onUpload={uploadCsv} />
+            <Uploader isUploading={isUploading} onUpload={uploadCsv} serverError={errors.upload} />
           </Panel>
         </div>
 
         <div className={clsx(styles.column, styles.statusColumn)}>
           <Panel className={styles.statusPanel} title={copy.status.title} helper={copy.status.helper}>
-            {error ? <ErrorBanner message={error} /> : null}
+            {errors.status ? <ErrorBanner message={`Status: ${errors.status}`} /> : null}
+            {errors.events ? <ErrorBanner message={`Events: ${errors.events}`} /> : null}
+            {errors.dashboard ? <ErrorBanner message={`Dashboard: ${errors.dashboard}`} /> : null}
             <div className={styles.statusBody}>
-              <StatusTimeline entries={statusEntries} emptyLabel={copy.status.empty} />
+              <StatusTimeline entries={statusEntries} events={events} emptyLabel={copy.status.empty} />
             </div>
           </Panel>
         </div>

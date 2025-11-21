@@ -8,3 +8,4 @@ Skyler Gospel – Build & Operate Guidance
 6. Reference OpenAI tool/function-calling docs (the “copy/paste” example shows how to build a ReAct loop agent) and reuse that blueprint to bootstrap agents quickly.
 7. Experiment with the `gpt-oss20b` model—it’s comparable to o3 for this workload.
 8. Start with mvp with a llm for orchestration
+9. If need be take azd up scaffolding from codex project to use

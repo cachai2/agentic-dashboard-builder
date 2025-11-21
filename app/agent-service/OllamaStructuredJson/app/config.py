@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     prompt_dir: Path = Field(
         default=PROJECT_ROOT / "prompts",
         validation_alias="PROMPT_DIR",
+    )
+    request_dump_dir: Optional[Path] = Field(
+        default=REPO_ROOT / "app" / "agent-service" / "artifacts" / "gateway_requests",
+        validation_alias="OLLAMA_REQUEST_DUMP_DIR",
+        description="If set, the gateway dumps outbound Ollama requests into this directory for debugging.",
     )
     service_port: int = Field(
         default=8801,

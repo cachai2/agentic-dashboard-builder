@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   AgentStatusEntry,
   DashboardResponse,
+  StatusResponse,
   UploadMetadata,
   UploadSession,
   WorkflowEventEntry,
@@ -13,15 +14,40 @@ import { trackEvent } from '@/utils/instrumentation'
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : 'Unexpected orchestrator error'
 
+type PlannerErrors = {
+  upload: string | null
+  status: string | null
+  dashboard: string | null
+  events: string | null
+}
+
+const createDefaultErrors = (): PlannerErrors => ({
+  upload: null,
+  status: null,
+  dashboard: null,
+  events: null,
+})
+
 export const usePlannerSession = (client: PlannerClient = defaultPlannerClient) => {
   const [session, setSession] = useState<UploadSession | null>(null)
   const [statusEntries, setStatusEntries] = useState<AgentStatusEntry[]>([])
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [events, setEvents] = useState<WorkflowEventEntry[]>([])
   const [isUploading, setIsUploading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [errors, setErrors] = useState<PlannerErrors>(createDefaultErrors)
 
   const pollTimerRef = useRef<number | null>(null)
+
+  const resetErrors = useCallback(() => {
+    setErrors(createDefaultErrors())
+  }, [])
+
+  const setErrorField = useCallback((field: keyof PlannerErrors, value: string | null) => {
+    setErrors((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }, [])
 
   const clearExistingTimer = useCallback(() => {
     if (pollTimerRef.current) {
@@ -34,23 +60,42 @@ export const usePlannerSession = (client: PlannerClient = defaultPlannerClient) 
 
   const pollStatus = useCallback(async () => {
     if (!session) return
+
+    let status: StatusResponse | null = null
     try {
-      const status = await client.getStatus(session.sessionId)
+      status = await client.getStatus(session.sessionId)
       setStatusEntries(status.entries)
+      setErrorField('status', null)
+    } catch (err) {
+      setErrorField('status', getErrorMessage(err))
+      clearExistingTimer()
+      return
+    }
+
+    try {
       const eventsResponse = await client.getEvents(session.sessionId)
       setEvents(eventsResponse.events)
-      if (status.isComplete) {
+      setErrorField('events', null)
+    } catch (err) {
+      setErrorField('events', getErrorMessage(err))
+    }
+
+    if (status.isComplete) {
+      try {
         const dashboardResponse = await client.getDashboard(session.sessionId)
         setDashboard(dashboardResponse)
+        setErrorField('dashboard', null)
         clearExistingTimer()
         return
+      } catch (err) {
+        setErrorField('dashboard', getErrorMessage(err))
+        pollTimerRef.current = window.setTimeout(pollStatus, status.nextPollInMs ?? 1500)
+        return
       }
-      pollTimerRef.current = window.setTimeout(pollStatus, status.nextPollInMs ?? 1500)
-    } catch (err) {
-      setError(getErrorMessage(err))
-      clearExistingTimer()
     }
-  }, [client, clearExistingTimer, session])
+
+    pollTimerRef.current = window.setTimeout(pollStatus, status.nextPollInMs ?? 1500)
+  }, [client, clearExistingTimer, session, setErrorField])
 
   useEffect(() => {
     if (!session) return
@@ -61,24 +106,26 @@ export const usePlannerSession = (client: PlannerClient = defaultPlannerClient) 
   const uploadCsv = useCallback(
     async (file: File, metadata: UploadMetadata) => {
       setIsUploading(true)
-      setError(null)
+      resetErrors()
       setDashboard(null)
       setStatusEntries([])
       setEvents([])
       try {
         const createdSession = await client.uploadCsv(file, metadata)
         setSession(createdSession)
+        setErrorField('upload', null)
         trackEvent('upload-submitted', {
           scenarioName: metadata.scenarioName,
         })
       } catch (err) {
-        setError(getErrorMessage(err))
+        const message = getErrorMessage(err)
+        setErrorField('upload', message)
         trackEvent('upload-error', { message: getErrorMessage(err) })
       } finally {
         setIsUploading(false)
       }
     },
-    [client],
+    [client, resetErrors, setErrorField],
   )
 
   return {
@@ -88,7 +135,7 @@ export const usePlannerSession = (client: PlannerClient = defaultPlannerClient) 
     dashboard,
     events,
     isUploading,
-    error,
+    errors,
     isComplete: Boolean(dashboard),
   }
 }

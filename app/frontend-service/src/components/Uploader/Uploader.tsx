@@ -6,6 +6,7 @@ import styles from './Uploader.module.css'
 type Props = {
   isUploading: boolean
   onUpload: (file: File, metadata: UploadMetadata) => Promise<void> | void
+  serverError?: string | null
 }
 
 const createDefaultMetadata = (): UploadMetadata => ({
@@ -14,7 +15,7 @@ const createDefaultMetadata = (): UploadMetadata => ({
   notes: '',
 })
 
-export const Uploader = ({ isUploading, onUpload }: Props) => {
+export const Uploader = ({ isUploading, onUpload, serverError }: Props) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [metadata, setMetadata] = useState<UploadMetadata>(createDefaultMetadata)
   const [dragActive, setDragActive] = useState(false)
@@ -124,6 +125,7 @@ export const Uploader = ({ isUploading, onUpload }: Props) => {
       </div>
 
       {error ? <span className={styles.error}>{error}</span> : null}
+      {serverError ? <span className={styles.error}>{serverError}</span> : null}
 
       <div className={styles.actions}>
         <button type="button" className={styles.secondaryButton} onClick={reset}>

@@ -22,6 +22,10 @@ def _default_plan_schema_path() -> Path:
     return candidates[0]
 
 
+def _default_planner_dump_dir() -> Path:
+    return Path(__file__).resolve().parents[2] / "artifacts" / "planner_payloads"
+
+
 class OrchestratorSettings(BaseSettings):
     """Environment-driven settings for the orchestrator workflow."""
 
@@ -56,6 +60,10 @@ class OrchestratorSettings(BaseSettings):
     planner_mode: Literal["remote", "mock"] = Field(
         default="remote",
         description="Switch between calling the remote Ollama service or using the mock plan sample.",
+    )
+    planner_request_dump_dir: Path = Field(
+        default_factory=_default_planner_dump_dir,
+        description="Directory where planner-to-gateway payloads are written for debugging.",
     )
 
     class Config:

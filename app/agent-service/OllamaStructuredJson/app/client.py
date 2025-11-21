@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
@@ -68,6 +70,7 @@ class OllamaClient:
             use_generate,
             self._format_payload_for_log(body),
         )
+        self._maybe_dump_request(body)
         response = client.post(endpoint, json=body)
         try:
             response.raise_for_status()
@@ -99,7 +102,13 @@ class OllamaClient:
             stream=stream,
         )
         raw = self.extract_message_text(response)
-        parsed = json.loads(raw)
+        cleaned = self._strip_markdown_fences(raw)
+        try:
+            parsed = json.loads(cleaned)
+        except json.JSONDecodeError:
+            snippet = raw[:1000]
+            logger.error("Structured response was not valid JSON; first 1k bytes: %s", snippet)
+            raise
         return parsed, raw, response
 
     def chat_general(
@@ -148,8 +157,7 @@ class OllamaClient:
     ) -> Dict[str, Any]:
         payload_model = model or self.settings.ollama_model
         options = extra_options.copy() if extra_options else {}
-        if temperature is not None:
-            options.setdefault("temperature", temperature)
+        temp_value = temperature
 
         if use_generate:
             system_prompt, prompt = self._messages_to_prompt(messages)
@@ -167,11 +175,32 @@ class OllamaClient:
                 "stream": stream,
             }
 
+        if temp_value is not None:
+            if self._should_inline_temperature():
+                body["temperature"] = temp_value
+            else:
+                options.setdefault("temperature", temp_value)
+
         if format_payload is not None:
-            options.setdefault("format", format_payload)
+            if isinstance(format_payload, dict) and self._supports_top_level_schema():
+                body["schema"] = format_payload
+            else:
+                options.setdefault("format", format_payload)
         if options:
             body["options"] = options
         return body
+
+    def _supports_top_level_schema(self) -> bool:
+        api_path = (self.settings.ollama_api_path or "").strip().lower()
+        if api_path:
+            normalized = "/" + api_path.lstrip("/")
+        else:
+            host_path = urlparse(self.settings.ollama_host).path.lower()
+            normalized = host_path.rstrip("/") or ""
+        return normalized.endswith("/api/chat") or normalized.endswith("/v1/chat/completions")
+
+    def _should_inline_temperature(self) -> bool:
+        return self.settings.ollama_mode == "remote"
 
     @staticmethod
     def _messages_to_prompt(messages: List[Dict[str, str]]) -> Tuple[Optional[str], str]:
@@ -195,6 +224,18 @@ class OllamaClient:
             return str(payload)
         return serialized[:800]
 
+    def _maybe_dump_request(self, payload: Dict[str, Any]) -> None:
+        dump_dir = self.settings.request_dump_dir
+        if not dump_dir:
+            return
+        try:
+            dump_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+            dump_path = dump_dir / f"ollama_request_{timestamp}.json"
+            dump_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        except Exception as exc:  # pragma: no cover - diagnostic only
+            logger.warning("Failed to dump Ollama request: %s", exc)
+
     @staticmethod
     def extract_message_text(data: Dict[str, Any]) -> str:
         if "message" in data and data["message"].get("content"):
@@ -202,6 +243,18 @@ class OllamaClient:
         if "choices" in data and data["choices"]:
             return data["choices"][0]["message"].get("content", "")
         raise RuntimeError("Ollama response missing content")
+
+    @staticmethod
+    def _strip_markdown_fences(text: str) -> str:
+        stripped = text.strip()
+        if not stripped.startswith("```"):
+            return stripped
+        lines = stripped.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
+        return "\n".join(lines).strip()
 
     def close(self) -> None:
         if self._http_client:

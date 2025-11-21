@@ -95,6 +95,7 @@ class StructuredPlanner:
         self._validator = PlanValidator(planner_settings)
         self._model_name = planner_settings.ollama_model
         self._mock_plan_path = _resolve_mock_plan_path()
+        self._request_dump_dir = settings.planner_request_dump_dir
 
     def generate(self, profile_summary: Dict[str, Any], session_id: Optional[str]) -> Dict[str, Any]:
         prompt_bundle = render_prompt(profile_summary, prompt_version=self._prompt_version)
@@ -144,6 +145,7 @@ class StructuredPlanner:
         headers = {"Content-Type": "application/json"}
         if session_id:
             headers["X-Session-ID"] = session_id
+        self._dump_gateway_payload(payload, session_id)
         response = self._http_client.post(f"{self._gateway_url}/json", json=payload, headers=headers)
         response.raise_for_status()
         data = response.json()
@@ -182,6 +184,19 @@ class StructuredPlanner:
             },
         )
         return {"plan": plan, "metadata": metadata, "raw_response": raw_response}
+
+    def _dump_gateway_payload(self, payload: Dict[str, Any], session_id: Optional[str]) -> None:
+        dump_dir = self._request_dump_dir
+        if not dump_dir:
+            return
+        try:
+            dump_dir.mkdir(parents=True, exist_ok=True)
+            ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+            suffix = f"_{session_id}" if session_id else ""
+            path = dump_dir / f"planner_payload{suffix}_{ts}.json"
+            path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        except Exception as exc:  # pragma: no cover - diagnostics only
+            logger.warning("Failed to dump planner payload: %s", exc)
 
 
 _PLANNER_INSTANCE: StructuredPlanner | None = None
