@@ -23,13 +23,26 @@ class PlanValidator:
             return json.load(schema_file)
 
     def parse_and_validate(self, plan_text: str) -> Dict[str, Any]:
+        clean = self._strip_markdown_fences(plan_text)
         try:
-            plan = orjson.loads(plan_text)
+            plan = orjson.loads(clean)
         except orjson.JSONDecodeError as exc:  # pragma: no cover - vendor-specific path
             raise ValueError("Planner returned invalid JSON") from exc
 
         jsonschema.validate(instance=plan, schema=self._schema)
         return plan
+
+    @staticmethod
+    def _strip_markdown_fences(text: str) -> str:
+        stripped = text.strip()
+        if not stripped.startswith("```"):
+            return stripped
+        lines = stripped.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].startswith("```"):
+            lines = lines[:-1]
+        return "\n".join(lines).strip()
 
     @property
     def schema(self) -> Dict[str, Any]:
