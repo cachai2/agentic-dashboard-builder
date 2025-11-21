@@ -20,8 +20,6 @@ def orchestrator_test_environment(monkeypatch: pytest.MonkeyPatch) -> Generator[
 
     if "ORCH_PLANNER_MODE" not in os.environ:
         monkeypatch.setenv("ORCH_PLANNER_MODE", "mock")
-    if "ORCH_PLANNER_GATEWAY_HOST" not in os.environ:
-        monkeypatch.setenv("ORCH_PLANNER_GATEWAY_HOST", "http://127.0.0.1:8801")
     monkeypatch.delenv("ORCH_CSV_PROFILER_ENDPOINT", raising=False)
 
     from agent_orchestrator.settings import reset_settings_cache

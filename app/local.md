@@ -1,6 +1,6 @@
 # Local end-to-end test (remote Ollama)
 
-Use these steps to run both services on your dev machine while the orchestrator calls the hosted Ollama gateway.
+Use these steps to run both services on your dev machine while the orchestrator calls the hosted Ollama deployment directly.
 
 ## Quick start script
 
@@ -14,7 +14,7 @@ Flags:
 
 | Flag | Description |
 | --- | --- |
-| `-OllamaHost <url>` | Override the remote Ollama gateway (defaults to the Azure instance). |
+| `-OllamaHost <url>` | Override the remote Ollama host (defaults to the Azure instance). |
 | `-AgentPort <port>` | Change the FastAPI port (default `8800`). |
 | `-FrontendOrigin <origin>` | Origin added to `ORCH_ALLOWED_ORIGINS` (default `http://localhost:5173`). |
 | `-SkipInstalls` | Skip `pip install -e . --pre` and `npm install` if you already ran them. |
@@ -35,7 +35,7 @@ Close each spawned terminal (Ctrl+C) to stop the services.
 - Python 3.10+ with `venv`
 - Node.js 18+
 - Access to the remote endpoints:
-  - Ollama gateway: `https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io`
+  - Ollama host: `https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io`
   - FastAPI orchestrator will run locally on `http://localhost:8800`
 
 ## 1. Start the Agent Orchestrator locally
@@ -47,12 +47,11 @@ python -m venv .venv
 pip install -e . --pre
 ```
 
-Configure the orchestrator to call the remote Ollama gateway and to accept browser calls from the local frontend:
+Configure the orchestrator to call the remote Ollama host and to accept browser calls from the local frontend:
 
 ```powershell
 # PowerShell examples – create/update .env in this folder
 Set-Content -Path .env -Value @'
-ORCH_PLANNER_GATEWAY_HOST="https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io"
 ORCH_OLLAMA_HOST="https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io"
 ORCH_PLANNER_MODE="remote"
 ORCH_ALLOWED_ORIGINS="http://localhost:5173"
@@ -102,12 +101,12 @@ Visit `http://localhost:5173` and confirm the badge shows **Live planner (API)**
 
 1. Upload a CSV via the playground.
 2. Watch the status timeline poll `http://localhost:8800/dashboard/status`.
-3. Confirm the orchestrator log shows requests headed to the remote Ollama gateway URL.
+3. Confirm the orchestrator log shows requests headed to the remote Ollama host.
 
 ## Troubleshooting
 
 - `net::ERR_CONNECTION_REFUSED` – ensure the FastAPI server is running on port 8800 and that `VITE_API_BASE_URL` points to it.
 - CORS errors – verify `ORCH_ALLOWED_ORIGINS` includes `http://localhost:5173`. Restart `uvicorn` after changing the env file.
-- Planner errors – double-check `ORCH_PLANNER_GATEWAY_HOST` and `ORCH_OLLAMA_HOST` values, plus any credentials required by the remote Ollama service.
+- Planner errors – double-check `ORCH_OLLAMA_HOST` (and model/timeouts) plus any credentials required by the remote Ollama service.
 
 Once both services run locally, you can iterate quickly while still exercising the real planner hosted in Azure.

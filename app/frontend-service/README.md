@@ -57,7 +57,7 @@ Feature flag values are rendered in the hero pill so demo crews always know what
 
 1. **Frontend env vars** – deploy `VITE_API_BASE_URL=https://agent-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io` and `VITE_USE_MOCK=false` via your Container App/App Service config (matching `.env.production`).
 2. **Agent CORS** – ensure `ORCH_ALLOWED_ORIGINS` (or the defaults baked into `agent_orchestrator.api.app`) include both the Azure frontend URL and `http://localhost:5173` for local smoke tests.
-3. **Agent → Ollama** – configure `ORCH_PLANNER_GATEWAY_HOST=https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io` and any required credentials on the agent container.
+3. **Agent → Ollama** – configure `ORCH_OLLAMA_HOST=https://planner-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io` (or your preferred host) and any required credentials on the agent container.
 4. **Restart containers** – bounce the Azure frontend, agent, and Ollama apps after changing env vars so settings reload.
 5. **Smoke test** – upload a CSV from the Azure frontend and confirm `/upload` calls hit the Azure agent domain without CORS/network errors.
 

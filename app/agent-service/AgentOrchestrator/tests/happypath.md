@@ -30,11 +30,11 @@
 
   ```powershell
   $env:ORCH_PLANNER_MODE = 'remote'
-  $env:ORCH_PLANNER_GATEWAY_HOST = 'https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io'
+  $env:ORCH_OLLAMA_HOST = 'https://planner-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io'
   C:\Python313\python.exe -m pytest tests/test_telco_happy_path.py -vv
   ```
 
-- With remote mode, the planner step hits the ACA Ollama gateway. Latest run: `1 passed in ~241s` (latency dominated by LLM inference).
+- With remote mode, the planner step hits the ACA Ollama deployment directly. Latest run: `1 passed in ~241s` (latency dominated by LLM inference).
 - The same assertions run; failures usually indicate schema validation issues or gateway outages.
 
 ## Why Rendering Is Not Included Yet
@@ -45,6 +45,6 @@
 
 ## Troubleshooting
 
-- If the test hangs in remote mode, confirm the planner gateway is reachable and `ORCH_OLLAMA_HOST` points to the deployed model.
+- If the test hangs in remote mode, confirm the Ollama host is reachable and `ORCH_OLLAMA_HOST` points to the deployed model.
 - Schema validation failures appear as `jsonschema.ValidationError`, printed in pytest output. Check `artifacts/planner_payloads` for the offending request/response pairs.
 - Profiling failures usually mean the CSV path moved; the test asserts `telco_churn_sample.csv` exists under `app/agent-service/CsvProfilerAgent/samples/`.

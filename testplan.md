@@ -74,7 +74,7 @@ _Last updated: 2025-11-20_
 
 | ID | Scenario | Objective | Steps | Expected |
 | --- | --- | --- | --- | --- |
-| **ORCH-01** | CLI handshake | Confirm CLI uses configured gateway host | **Terminal A:** keep gateway from GW-03 running. **Terminal B:** `cd app/agent-service/AgentOrchestrator`; set `ORCH_PLANNER_GATEWAY_HOST=http://127.0.0.1:8801`; run `python -m agent_orchestrator.cli ..\CsvProfilerAgent\samples\retail_superstore_sample.csv` | CLI issues POST → `/json`/`/plan`; captured via gateway access logs with correct schema payload |
+| **ORCH-01** | CLI handshake | Confirm CLI uses configured Ollama host | **Terminal A:** ensure your target Ollama endpoint is reachable. **Terminal B:** `cd app/agent-service/AgentOrchestrator`; set `ORCH_OLLAMA_HOST=https://planner-ignite-demo-evdeo...azurecontainerapps.io`; run `python -m agent_orchestrator.cli ..\CsvProfilerAgent\samples\retail_superstore_sample.csv` | CLI sends `/api/chat` request with schema + prompt metadata; logs show matching host |
 | **ORCH-02** | Payload validation | Ensure orchestrator sends schema + prompt metadata | **Terminal A:** gateway in debug log mode. **Terminal B:** run CLI; inspect request body for `schema` + `plan_version` fields via gateway terminal output | Request includes schema reference, `prompt_version`, session id; orchestrator respects `planner_mode` |
 | **ORCH-03** | Error propagation | Gateway returns invalid JSON; orchestrator should surface actionable error | **Terminal A:** run gateway against live Ollama via a chaos proxy (e.g., `toxiproxy`) that corrupts the response body while requests still reach ACA. **Terminal B:** run CLI and observe failure | CLI exits non-zero, prints validation error referencing schema path |
 | **ORCH-04** | Retry + fallback | Verify orchestrator retries planner failure once, then surfaces fallback plan | **Terminal A:** run chaos proxy (`toxiproxy`) affecting gateway; **Terminal B:** run CLI; **Terminal C (optional):** tail orchestrator logs | Log shows retry with new prompt hash; workflow succeeds on 2nd attempt or surfaces fallback plan artifact |
@@ -127,7 +127,7 @@ Set the following environment variables before launch (sample for PowerShell):
 $env:OLLAMA_MODE='remote'
 $env:OLLAMA_HOST='https://ollama-ignite-demo-evdeo...azurecontainerapps.io'
 $env:PLAN_SCHEMA_PATH='schemas/dashboard_plan.schema.json'
-$env:ORCH_PLANNER_GATEWAY_HOST='http://127.0.0.1:8801'
+$env:ORCH_OLLAMA_HOST='https://planner-ignite-demo-evdeo...azurecontainerapps.io'
 $env:AZURE_STORAGE_CONNECTION_STRING='UseDevelopmentStorage=true;'
 $env:VITE_AGENT_BASE_URL='http://localhost:8000'
 ```

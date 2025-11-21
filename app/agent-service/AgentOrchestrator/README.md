@@ -43,7 +43,7 @@
    - Author request/response models for `ProfileRequest`, `PlanRequest`, `RenderRequest`, etc.
 3. **Wrap tools**
    - Import the profiler/renderer modules directly so the orchestrator can call them synchronously.
-   - For remote Ollama, point the planner tool at the Ollama Gateway base URL (e.g. `https://ollama-ignite-demo-...azurecontainerapps.io`) and call the `/json` endpoint with the DashboardPlan schema.
+   - For remote Ollama, configure `ORCH_OLLAMA_HOST` so the planner tool sends structured `/api/chat` requests straight to the Ollama deployment.
 4. **Build workflow**
    - Start with sequential execution: profile → plan → render → return artifact path.
    - Add retries (planner JSON validation) and validation steps (schema enforcement) inline.
@@ -52,7 +52,7 @@
    - Add CLI for smoke testing (`python -m agent_orchestrator.cli --csv samples/retail_superstore_sample.csv`).
 6. **Observability**
    - Emit Agent Framework traces; optionally forward to Application Insights once instrumentation key is available.
-   - The planner tool now logs every `/json` request/response (URL, session ID, prompt hash, duration) at INFO so you can confirm when the orchestrator hits the Ollama gateway.
+   - The planner tool now logs every `/api/chat` request/response (host, session ID, prompt hash, duration) at INFO so you can confirm when the orchestrator speaks directly to Ollama.
 
 ## Getting started
 
@@ -70,20 +70,12 @@
 2. **Run the upload → plan workflow locally**
 
    ```powershell
-   # terminal 1 – start the planner gateway (FastAPI) and point it at the ACA Ollama host
-   cd ..\OllamaStructuredJson
-   $env:OLLAMA_MODE='remote'
-   $env:OLLAMA_HOST='https://<ollama-app-fqdn>'
-   uvicorn app.service:app --port 8801 --reload
-
-   # terminal 2 – run the orchestrator CLI against that gateway
    cd ..\AgentOrchestrator
-   $env:ORCH_PLANNER_GATEWAY_HOST='http://127.0.0.1:8801'
+   $env:ORCH_OLLAMA_HOST='https://<ollama-app-fqdn>'   # or http://127.0.0.1:11434 for local Ollama
    python -m agent_orchestrator.cli ..\CsvProfilerAgent\samples\retail_superstore_sample.csv --output-dir .\artifacts
 
-   # when running the orchestrator inside Docker, point at the host gateway instead
-   # (host.docker.internal routes back to the Windows/macOS host)
-   # docker run ... -e ORCH_PLANNER_GATEWAY_HOST="http://host.docker.internal:8801" ...
+   # when running the orchestrator inside Docker, pass through the same host
+   # docker run ... -e ORCH_OLLAMA_HOST="https://<ollama-app-fqdn>" ...
    ```
 
    > When Ollama isn’t available, either set `ORCH_PLANNER_MODE=mock` to load the bundled sample plan or add `--skip-plan` to run profiling only. Mock mode still produces a valid DashboardPlan payload, but it skips the gateway entirely.
@@ -93,7 +85,7 @@
 ### Azure container settings
 
 - `ORCH_ALLOWED_ORIGINS` – comma-delimited list of frontend origins that can call the API. Defaults cover `https://frontend-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io` and `http://localhost:5173`.
-- `ORCH_PLANNER_GATEWAY_HOST` – set to `https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io` so the orchestrator can reach the hosted planner/Ollama gateway.
+- `ORCH_OLLAMA_HOST` – set to the Ollama deployment (`https://planner-ignite-demo-...azurecontainerapps.io` or your own) the orchestrator should call.
 
 ## Next actions
 

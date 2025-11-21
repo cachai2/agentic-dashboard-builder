@@ -52,7 +52,6 @@ if (-not $SkipInstalls) {
 Write-Section "Writing agent-service .env"
 $agentEnvPath = Join-Path $agentDir ".env"
 $agentEnvContent = @"
-ORCH_PLANNER_GATEWAY_HOST="$OllamaHost"
 ORCH_OLLAMA_HOST="$OllamaHost"
 ORCH_PLANNER_MODE="remote"
 ORCH_ALLOWED_ORIGINS="$FrontendOrigin"

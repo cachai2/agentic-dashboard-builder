@@ -1,4 +1,4 @@
-"""Tool that calls the shared Ollama gateway's JSON endpoint to obtain plans."""
+"""Tool that calls Ollama's structured `/api/chat` endpoint to obtain plans."""
 
 from __future__ import annotations
 
@@ -24,8 +24,6 @@ except ImportError:  # pragma: no cover
             return func
 
         return decorator
-
-import httpx
 
 
 def _detect_repo_root() -> Path | None:
@@ -272,8 +270,7 @@ class StructuredPlanner:
         )
         self._prompt_version = settings.prompt_version
         self._planner_mode = settings.planner_mode
-        self._gateway_url = str(settings.planner_gateway_host).rstrip("/")
-        self._http_client = httpx.Client(timeout=settings.ollama_timeout_seconds)
+        self._ollama_host = str(settings.ollama_host).rstrip("/")
         self._validator = _ValidatorFacade(PlanValidator(planner_settings))
         self._model_name = planner_settings.ollama_model
         self._mock_plan_path = _resolve_mock_plan_path()
@@ -299,7 +296,7 @@ class StructuredPlanner:
 
         for attempt in range(2):
             try:
-                raw_response = self._invoke_gateway(prompt_bundle, session_id)
+                raw_response = self._invoke_planner(prompt_bundle, session_id)
                 plan = self._validator.parse(raw_response)
                 plan = self._ensure_valid_plan(plan)
                 plan = augment_plan(plan, profile_summary)
@@ -318,23 +315,7 @@ class StructuredPlanner:
 
         raise RuntimeError("Planner failed unexpectedly") from last_error
 
-    def _invoke_gateway(self, prompt_bundle: Dict[str, str], session_id: Optional[str]) -> str:
-        remote_error: Exception | None = None
-        if self._gateway_url:
-            try:
-                return self._invoke_remote_gateway(prompt_bundle, session_id)
-            except Exception as exc:  # pragma: no cover - depends on deployment wiring
-                remote_error = exc
-                logger.warning("Remote planner gateway failed; falling back to embedded client", exc_info=exc)
-
-        if self._embedded_client_cls is not None:
-            return self._invoke_embedded_gateway(prompt_bundle)
-
-        if remote_error:
-            raise remote_error
-        raise RuntimeError("Planner gateway unavailable")
-
-    def _invoke_remote_gateway(self, prompt_bundle: Dict[str, str], session_id: Optional[str]) -> str:
+    def _invoke_planner(self, prompt_bundle: Dict[str, str], session_id: Optional[str]) -> str:
         payload = {
             "messages": [
                 {"role": "system", "content": prompt_bundle["system"]},
@@ -345,47 +326,30 @@ class StructuredPlanner:
             "temperature": 0.1,
             "stream": False,
         }
-        headers = {"Content-Type": "application/json"}
-        if session_id:
-            headers["X-Session-ID"] = session_id
         self._dump_gateway_payload(payload, session_id)
-        request_start = perf_counter()
+        client = self._ensure_embedded_client()
+        messages = payload["messages"]
         prompt_hash = prompt_bundle.get("prompt_hash")
+        request_start = perf_counter()
         logger.info(
-            "Planner request -> %s/json (model=%s, session=%s, prompt_hash=%s)",
-            self._gateway_url,
+            "Planner request -> %s/api/chat (model=%s, session=%s, prompt_hash=%s)",
+            self._ollama_host,
             self._model_name,
             session_id or "<none>",
             prompt_hash or "<missing>",
         )
-        response = self._http_client.post(f"{self._gateway_url}/json", json=payload, headers=headers)
-        logger.info(
-            "Planner response <- %s/json (status=%s, duration_ms=%.1f)",
-            self._gateway_url,
-            response.status_code,
-            (perf_counter() - request_start) * 1000,
-        )
-        response.raise_for_status()
-        data = response.json()
-        raw = data.get("raw")
-        if not raw and "content" in data:
-            raw = json.dumps(data["content"])
-        if not raw:
-            raise RuntimeError("Gateway response missing content")
-        return raw
-
-    def _invoke_embedded_gateway(self, prompt_bundle: Dict[str, str]) -> str:
-        client = self._ensure_embedded_client()
-        messages = [
-            {"role": "system", "content": prompt_bundle["system"]},
-            {"role": "user", "content": prompt_bundle["user"]},
-        ]
         parsed, raw, _ = client.chat_json(
             messages,
             schema=self._validator.schema,
             model=self._model_name,
             temperature=0.1,
             stream=False,
+        )
+        duration = (perf_counter() - request_start) * 1000
+        logger.info(
+            "Planner response <- %s/api/chat (duration_ms=%.1f)",
+            self._ollama_host,
+            duration,
         )
         if not raw:
             raw = json.dumps(parsed)

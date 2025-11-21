@@ -150,16 +150,10 @@ python -m uvicorn app.main:app --reload --port 8000
 # build the image from the repo root
 docker build -t agent-service:dev app/agent-service
 
-# run the planner gateway locally (see Playground/OllamaStructuredJson)
-cd app\agent-service\OllamaStructuredJson
-$env:OLLAMA_MODE='remote'
-$env:OLLAMA_HOST='https://ollama-<env>...azurecontainerapps.io'
-uvicorn app.service:app --port 8801 --reload
-
-# in another terminal, launch the agent container
+# launch the agent container with direct Ollama access
 docker run --rm -it ^
   -p 8080:8080 ^
-  -e ORCH_PLANNER_GATEWAY_HOST="http://host.docker.internal:8801" ^
+  -e ORCH_OLLAMA_HOST="https://ollama-<env>...azurecontainerapps.io" ^
   -e OLLAMA_MODEL="gemma2:27b" ^
   -e AZURE_STORAGE_CONNECTION_STRING="UseDevelopmentStorage=true;" ^
   agent-service:dev
@@ -167,7 +161,7 @@ docker run --rm -it ^
 
 - The container entrypoint (`docker-entrypoint.sh`) automatically starts `uvicorn agent_orchestrator.api.app:app --host 0.0.0.0 --port 8080`. Override it by passing your own command (`docker run ... bash`) or by setting `APP_MODULE`, `HOST`, or `PORT` environment variables.
 - When you prefer to keep storage traffic inside Docker, run Azurite on a shared network and update the connection string with the container hostname (e.g. `BlobEndpoint=http://azurite:10000/devstoreaccount1`). Otherwise `UseDevelopmentStorage=true;` targets a host-running Azurite instance.
-- Planner traffic is routed through `ORCH_PLANNER_GATEWAY_HOST`; use `host.docker.internal` when the gateway runs on your workstation, or switch to the container name when both run on the same Docker network.
+- Planner traffic is routed directly to the Ollama host you specify via `ORCH_OLLAMA_HOST`; when targeting a laptop-hosted Ollama instance from Docker, use `host.docker.internal` (e.g. `http://host.docker.internal:11434`).
 
 ### Frontend (`app/frontend-service`)
 

@@ -49,10 +49,6 @@ class OrchestratorSettings(BaseSettings):
         description="Maximum rows to sample when profiling locally. None means full dataset.",
         ge=1,
     )
-    planner_gateway_host: HttpUrl = Field(
-        default="http://127.0.0.1:8801",
-        description="Base URL for the OllamaStructuredJson gateway that exposes the /json endpoint.",
-    )
     ollama_host: HttpUrl = Field(
         default="https://ollama-ignite-demo-evdeo.salmondune-d5fce79f.westus.azurecontainerapps.io",
         description="Base URL for the actual Ollama deployment that serves /api/chat.",

@@ -610,12 +610,8 @@ resource agentApp 'Microsoft.App/containerApps@2025-02-02-preview' = {
           image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
           env: [
             {
-              name: 'OLLAMA_HOST'
+              name: 'ORCH_OLLAMA_HOST'
               value: format('https://{0}', ollamaModule.outputs.OLLAMA_HOST)
-            }
-            {
-              name: 'ORCH_PLANNER_GATEWAY_HOST'
-              value: format('https://{0}', plannerGatewayApp.properties.configuration.ingress.fqdn)
             }
             {
               name: 'ORCH_ALLOWED_ORIGINS'
