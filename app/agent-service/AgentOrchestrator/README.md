@@ -52,6 +52,7 @@
    - Add CLI for smoke testing (`python -m agent_orchestrator.cli --csv samples/retail_superstore_sample.csv`).
 6. **Observability**
    - Emit Agent Framework traces; optionally forward to Application Insights once instrumentation key is available.
+   - The planner tool now logs every `/json` request/response (URL, session ID, prompt hash, duration) at INFO so you can confirm when the orchestrator hits the Ollama gateway.
 
 ## Getting started
 

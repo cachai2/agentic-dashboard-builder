@@ -349,7 +349,22 @@ class StructuredPlanner:
         if session_id:
             headers["X-Session-ID"] = session_id
         self._dump_gateway_payload(payload, session_id)
+        request_start = perf_counter()
+        prompt_hash = prompt_bundle.get("prompt_hash")
+        logger.info(
+            "Planner request -> %s/json (model=%s, session=%s, prompt_hash=%s)",
+            self._gateway_url,
+            self._model_name,
+            session_id or "<none>",
+            prompt_hash or "<missing>",
+        )
         response = self._http_client.post(f"{self._gateway_url}/json", json=payload, headers=headers)
+        logger.info(
+            "Planner response <- %s/json (status=%s, duration_ms=%.1f)",
+            self._gateway_url,
+            response.status_code,
+            (perf_counter() - request_start) * 1000,
+        )
         response.raise_for_status()
         data = response.json()
         raw = data.get("raw")
